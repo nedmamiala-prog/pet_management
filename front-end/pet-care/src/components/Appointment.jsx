@@ -143,6 +143,14 @@ useEffect(() => {
   const handleNext = () => setStep((prev) => Math.min(prev + 1, 4));
   const prevStep = () => setStep((prev) => Math.max(prev - 1, 1));
 
+  const findServiceByName = (serviceName) => services.find((s) => s.service_name === serviceName);
+  const totalCost = formData.services.reduce((sum, serviceName) => {
+    const info = findServiceByName(serviceName);
+    return sum + (info?.price || 0);
+  }, 0);
+
+  const formatCurrency = (value) => `₱${Number(value || 0).toFixed(2)}`;
+
 
   const formatTimeSlot = (time) => {
     if (time === "Anytime (24/7 available)" || time.includes("Anytime")) {
@@ -393,6 +401,7 @@ useEffect(() => {
       
       {step === 3 && (
   <>
+   
     <h3>Select Pet Care Service:</h3>
     {services.map((service) => (
       <label key={service.service_id}>
@@ -432,9 +441,10 @@ useEffect(() => {
             setFormData(prev => ({ ...prev, services: selected }));
           }}
         />
-        {service.service_name} ({service.duration_minutes} min)
+        {service.service_name} ({service.duration_minutes} min) — {formatCurrency(service.price)}
       </label>
     ))}
+    
 
     {formData.services.length > 0 && (
       <>
@@ -450,8 +460,10 @@ useEffect(() => {
         {formData.services.map(serviceName => {
           const serviceInfo = services.find(s => s.service_name === serviceName);
           return (
-            <div key={serviceName} style={{ marginBottom: '20px', padding: '10px', border: '1px solid #ddd', borderRadius: '5px' }}>
-              <h4>{serviceName} ({serviceInfo?.duration_minutes || 30} min duration):</h4>
+            <div key={serviceName} style={{ marginBottom: '10px', padding: '2px', border: '1px solid #ddd', borderRadius: '2px' }}>
+              <h4 style={{fontSize: "10px"}}>
+                {serviceName} ({serviceInfo?.duration_minutes || 30} min) — {formatCurrency(serviceInfo?.price)}
+              </h4>
               {loadingSlots[serviceName] ? (
                 <p>Loading available slots...</p>
               ) : availableSlots[serviceName] && availableSlots[serviceName].length > 0 ? (
@@ -460,6 +472,7 @@ useEffect(() => {
                   value={formData[`time-${serviceName}`] || ""}
                   onChange={handleChange}
                   required
+                  style={{ fontSize: "12px"}}
                 >
                   <option value="">-- Select Time --</option>
                   {availableSlots[serviceName].map(slot => (
@@ -469,13 +482,16 @@ useEffect(() => {
                   ))}
                 </select>
               ) : (
-                <p style={{ color: "#ff6b6b" }}>
+                <p style={{ color: "#ff6b6b", fontSize: "10px"}}>
                   No available slots for this service on the selected date.
                 </p>
               )}
             </div>
           );
         })}
+        <p style={{ fontWeight: 600, marginTop: '10px', fontSize: '12px' }}>
+          Total Estimated Cost: {formatCurrency(totalCost)}
+        </p>
       </>
     )}
   </>
@@ -496,16 +512,19 @@ useEffect(() => {
                 </li>
                 <li>
                   <strong>Services ({formData.services.length}):</strong>
-                  <ul style={{ marginTop: '10px', marginLeft: '20px' }}>
+                  <ul style={{ marginTop: '10px', marginLeft: '20px' }} >
                     {formData.services.map(serviceName => {
                       const serviceInfo = services.find(s => s.service_name === serviceName);
                       return (
                         <li key={serviceName}>
-                          {serviceName} ({serviceInfo?.duration_minutes || 30} min) - {formatTimeSlot(formData[`time-${serviceName}`] || "")}
+                          {serviceName} ({serviceInfo?.duration_minutes || 30} min) - {formatTimeSlot(formData[`time-${serviceName}`] || "")} — {formatCurrency(serviceInfo?.price)}
                         </li>
                       );
                     })}
                   </ul>
+                </li>
+                <li>
+                  <strong>Total Cost:</strong> {formatCurrency(totalCost)}
                 </li>
                 {formData.notes && (
                   <li>

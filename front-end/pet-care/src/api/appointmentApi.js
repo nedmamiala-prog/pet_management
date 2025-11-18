@@ -129,3 +129,27 @@ export async function UserPet() {
     
   };
 }
+
+export async function cancelAppointment(appointment_id, reason = '') {
+  const token = localStorage.getItem('token');
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  try {
+    const response = await fetch(`${BASE_URL}/cancel/${appointment_id}`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ reason }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      return { success: false, message: data.message || 'Failed to cancel appointment' };
+    }
+
+    return { success: true, message: data.message || 'Appointment cancelled' };
+  } catch (error) {
+    console.error('Cancel appointment error:', error);
+    return { success: false, message: 'Something went wrong while cancelling the appointment' };
+  }
+}

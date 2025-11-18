@@ -3,32 +3,23 @@ import { useNavigate } from 'react-router-dom';
 import './profile.css';
 import profile from '../assets/dp.png';
 import notify from '../assets/notif.png';
-import { User, Heart, Calendar, FileText, Mail, Edit2, PlusCircle } from 'lucide-react';
+import { User, Heart, Calendar, FileText, Mail, Edit2 } from 'lucide-react';
 import { getUser } from '../api/authApi'; 
-import {getUserPets} from '../api/petApi'
 import UserPet from './UserPet';
 import AppointmentSection from './UserAppointment';
 import Notification from './Notification';
-
+import { getUserNotifications } from '../api/notificationApi';
+import BillingSection from './BillingSection';
 
 function UserDashboard() {
-  
-  
   const user = getUser();
-
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
-  const [activeTab, setActiveTab] = useState('pending');
   const [notification, setNotification] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [showNotificationPanel, setShowNotificationPanel] = useState(false);
+  const [notificationLoading, setNotificationLoading] = useState(false);
   const navigate = useNavigate();
-  
 
-  useEffect(() => {
-    const timer = setTimeout(() => setIsVisible(true), 100);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Show initial welcome notification
   useEffect(() => {
     setNotification({
       title: 'Welcome Back!',
@@ -37,50 +28,53 @@ function UserDashboard() {
     });
   }, [user?.first_name]);
 
-  const showNotification = (title, message, type = 'info') => {
+  const loadNotifications = async () => {
+    setNotificationLoading(true);
+    const response = await getUserNotifications();
+    if (response.success) {
+      setNotifications(response.notifications);
+    }
+    setNotificationLoading(false);
+  };
+
+  useEffect(() => {
+    loadNotifications();
+  }, []);
+
+  const toggleMenu = () => setIsMenuOpen((prev) => !prev);
+
+  const showNotificationToast = (title, message, type = 'info') => {
     setNotification({ title, message, type });
   };
 
   const handleEditProfile = () => {
-    showNotification('Edit Profile', 'Profile editing feature coming soon!', 'info');
+    showNotificationToast('Edit Profile', 'Profile editing feature coming soon!', 'info');
   };
 
-  const handleAddPet = () => {
-    showNotification('Add Pet', 'New pet form will open soon!', 'info');
+  const handleNotificationClick = async () => {
+    const willShow = !showNotificationPanel;
+    setShowNotificationPanel(willShow);
+    if (willShow) {
+      await loadNotifications();
+    }
   };
 
-  const handleNotificationClick = () => {
-    // Example schedule notifications - you can replace with real data
-    const scheduleNotifications = [
-      {
-        title: '📅 Upcoming Appointment',
-        message: 'Your pet "Buddy" has a vaccination appointment on Nov 20, 2025 at 2:00 PM',
-        type: 'info'
-      },
-      {
-        title: '⏰ Appointment Reminder',
-        message: 'Grooming session for "Max" scheduled for tomorrow at 10:00 AM',
-        type: 'warning'
-      },
-      {
-        title: '✅ Appointment Completed',
-        message: 'Health checkup for "Luna" was completed successfully',
-        type: 'success'
-      },
-      {
-        title: '🔔 Pending Vaccination',
-        message: 'Your pet needs a booster shot. Book an appointment now!',
-        type: 'warning'
-      }
-    ];
-
-    // Show a random notification or cycle through them
-    const randomNotification = scheduleNotifications[Math.floor(Math.random() * scheduleNotifications.length)];
-    showNotification(randomNotification.title, randomNotification.message, randomNotification.type);
-  };
-
-  const handleTabClick = (tab) => {
-    setActiveTab(tab);
+  const formatNotificationTitle = (type) => {
+    switch (type) {
+      case 'appointment_reminder_24h':
+      case 'appointment_reminder_3h':
+        return 'Appointment Reminder';
+      case 'appointment_accepted':
+        return 'Appointment Accepted';
+      case 'appointment_cancelled':
+        return 'Appointment Cancelled';
+      case 'billing':
+        return 'Billing Update';
+      case 'payment_due':
+        return 'Payment Reminder';
+      default:
+        return 'Notification';
+    }
   };
 
   return (
@@ -111,7 +105,7 @@ function UserDashboard() {
             <a href="./UserDashboard" className="nav-link">About</a>
           </nav>
 
-          <div className="profile">
+          <div className="profile" style={{ position: 'relative' }}>
             <button 
               className="notify-btn"
               onClick={handleNotificationClick}
@@ -120,6 +114,31 @@ function UserDashboard() {
               <div className="notif" style={{ backgroundImage: `url(${notify})` }}></div>
             </button>
             <div className="prof" onClick={() => navigate('/profile')} style={{ backgroundImage: `url(${profile})` }}></div>
+
+            {showNotificationPanel && (
+              <div className="notification-panel">
+                <header>Notifications</header>
+                <div className="notification-list">
+                  {notificationLoading ? (
+                    <p className="notification-empty">Loading notifications...</p>
+                  ) : notifications.length === 0 ? (
+                    <p className="notification-empty">You're all caught up!</p>
+                  ) : (
+                    notifications.map((notif) => (
+                      <div key={notif.notification_id} className="notification-item">
+                        <h4>{formatNotificationTitle(notif.type)}</h4>
+                        <p>{notif.message}</p>
+                        {notif.metadata?.reason && (
+                          <p style={{ marginTop: '6px', fontSize: '12px', color: '#94a3b8' }}>
+                            Reason: {notif.metadata.reason}
+                          </p>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           <button className="mobile-menu-btn" onClick={toggleMenu}>
@@ -195,6 +214,8 @@ function UserDashboard() {
           <UserPet />
 
           <AppointmentSection/>
+
+          <BillingSection />
         </div>
       </div>
     </div>

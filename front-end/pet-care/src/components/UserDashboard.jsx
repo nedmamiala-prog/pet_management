@@ -8,6 +8,7 @@ import profile from '../assets/dp.png';
 import notify from '../assets/notif.png';
 import Appointment from './Appointment';
 import Notification from './Notification';
+import { logoutUser } from '../api/authApi';
 
 function UserDashboard() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -27,7 +28,6 @@ function UserDashboard() {
     return () => clearTimeout(timer);
   }, []);
 
-<<<<<<< HEAD
   // Handle scroll effects
   useEffect(() => {
     const handleScroll = () => {
@@ -38,9 +38,6 @@ function UserDashboard() {
   }, []);
 
   // Handle modal open/close by hash
-=======
-
->>>>>>> c04487b25becdd10b5c2cab2e1eb682b4e52d2cb
   useEffect(() => {
     if (location.hash === '#appointment') {
       setShowModal(true);
@@ -62,6 +59,10 @@ function UserDashboard() {
   };
 
   const toggleMenu = () => setIsMenuOpen((prev) => !prev);
+  const handleLogout = () => {
+    logoutUser();
+    navigate('/login');
+  };
 
   const showNotificationAlert = (title, message, type = 'info') => {
     setNotification({ title, message, type });
@@ -195,6 +196,9 @@ function UserDashboard() {
               onClick={() => navigate('/profile')}
               style={{ backgroundImage: `url(${profile})` }}
             ></div>
+            <button className="logout-btn" onClick={handleLogout}>
+              Logout
+            </button>
           </div>
 
           <button className="mobile-menu-btn" onClick={toggleMenu}>

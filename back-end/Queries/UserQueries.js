@@ -15,6 +15,11 @@ const User = {
     const sql = "SELECT * FROM user WHERE email = ?";
     db.query(sql, [email], callback);
   },
+
+  findById: (user_id, callback) => {
+    const sql = "SELECT * FROM user WHERE user_id = ?";
+    db.query(sql, [user_id], callback);
+  },
   
   createGoogleUser: (first_name, last_name, email, google_id, callback) => {
     

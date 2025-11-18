@@ -1,57 +1,38 @@
 const BASE_URL = 'http://localhost:5000/notifications';
 
-
-export const fetchNotifications = async () => {
-  try {
-    const response = await fetch(BASE_URL, { method: 'GET' });
-    const data = await response.json();
-    if (!response.ok) {
-      return { success: false, notifications: [], message: data.message || 'Failed to fetch notifications' };
-    }
-    return { success: true, notifications: data.notifications || [] };
-  } catch (error) {
-    console.error('Fetch notifications error:', error);
-    return { success: false, notifications: [], message: 'Something went wrong while fetching notifications' };
-  }
+const buildHeaders = () => {
+  const token = localStorage.getItem('token');
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return headers;
 };
 
-
-export async function CreateNotification({ message }) {
+export async function createNotification({ message, type = 'info' }) {
   try {
-    const token = localStorage.getItem('token');
     const response = await fetch(`${BASE_URL}/create`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ message }), 
+      headers: buildHeaders(),
+      body: JSON.stringify({ message, type }),
     });
 
     const data = await response.json();
-    console.log("Add Notification Response:", data);
 
     if (!response.ok) {
       return { success: false, message: data.message || 'Error adding notification' };
     }
 
-    return { success: true, notification: data.Notification };
+    return { success: true, notification: data.notification };
   } catch (error) {
     console.error('Add notification fetch error:', error);
     return { success: false, message: 'Something went wrong while adding notification' };
   }
 }
 
-
-export async function GetUserNotifications() {
+export async function getUserNotifications() {
   try {
-    const token = localStorage.getItem('token');
-    const headers = { 'Content-Type': 'application/json' };
-    if (token) headers.Authorization = `Bearer ${token}`;
-
-    const response = await fetch(`${BASE_URL}/userNotifications`, {
+    const response = await fetch(`${BASE_URL}/userNotification`, {
       method: 'GET',
-      headers,
+      headers: buildHeaders(),
     });
 
     const data = await response.json();

@@ -4,8 +4,7 @@ import { FaClock, FaCheckCircle, FaTimesCircle, FaCalendarCheck, FaArrowLeft, Fa
 import Sidebar from "./Sidebar"; 
 import Header from "./Header";    
 import "./AdminAppointmentPage.css";
-import { AppointmentGetAll } from "../api/appointmentApi";
-import {HandleAccept} from "../api/appointmentApi";
+import { AppointmentGetAll, HandleAccept, cancelAppointment } from "../api/appointmentApi";
 import { getAllServices, getAvailableSlots } from "../api/serviceApi";
 
 
@@ -18,6 +17,10 @@ export default function AdminAppointmentPage() {
   const [isAccepting, setIsAccepting] = useState(false);
   const [services, setServices] = useState([]);
   const [serviceSlots, setServiceSlots] = useState({}); 
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [isCancelling, setIsCancelling] = useState(false);
 
 useEffect(() => {
   async function fetchAllAppointments() {
@@ -115,9 +118,29 @@ useEffect(() => {
     setIsAccepting(false);
   }
 };
-  const handleDecline = (id) => {
-    if (!confirm("Are you sure you want to cancel this appointment?")) return;
-    updateStatus(id, "Cancelled");
+  const openCancelModal = (appointment) => {
+    setSelectedAppointment(appointment);
+    setCancelReason('');
+    setShowCancelModal(true);
+  };
+
+  const handleDecline = (appointment) => {
+    openCancelModal(appointment);
+  };
+
+  const handleSubmitCancellation = async () => {
+    if (!selectedAppointment) return;
+    setIsCancelling(true);
+    const response = await cancelAppointment(selectedAppointment.id, cancelReason);
+    setIsCancelling(false);
+
+    if (!response.success) {
+      setError(response.message || 'Failed to cancel appointment');
+      return;
+    }
+
+    updateStatus(selectedAppointment.id, "Cancelled");
+    setShowCancelModal(false);
   };
   const handleComplete = (id) => {
     updateStatus(id, "Completed");
@@ -206,13 +229,13 @@ useEffect(() => {
                               >
                                 {isAccepting ? 'Accepting...' : 'Accept'}
                               </button>
-                            <button className="decline-btn" onClick={() => handleDecline(item.id)}>Decline</button>
+                            <button className="decline-btn" onClick={() => handleDecline(item)}>Decline</button>
                           </>
                         )}
                         {item.status === "Accepted" && (
                           <>
                             <button className="complete-btn" onClick={() => handleComplete(item.id)}>Mark Completed</button>
-                            <button className="decline-btn" onClick={() => handleDecline(item.id)}>Cancel</button>
+                            <button className="decline-btn" onClick={() => handleDecline(item)}>Cancel</button>
                           </>
                         )}
                         {item.status === "Completed" && <span className="status completed">Done</span>}
@@ -230,6 +253,32 @@ useEffect(() => {
             </div>
           )}
         </div>
+
+        {showCancelModal && (
+          <div className="cancel-modal-overlay">
+            <div className="cancel-modal">
+              <h3>Cancel Appointment</h3>
+              <p>Please provide a reason for cancelling this appointment.</p>
+              <textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                placeholder="Reason for cancellation"
+              />
+              <div className="modal-actions">
+                <button className="back-btn" onClick={() => setShowCancelModal(false)}>
+                  Close
+                </button>
+                <button
+                  className="decline-btn"
+                  onClick={handleSubmitCancellation}
+                  disabled={isCancelling}
+                >
+                  {isCancelling ? 'Cancelling...' : 'Submit'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

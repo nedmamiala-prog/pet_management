@@ -38,7 +38,7 @@ function Sidebar() {
                 </Link>
         </li>
         <li className= 'sidebar-list-item'>
-            <Link to="#">
+            <Link to="/admin/billing">
                 <BsCreditCard className='icon'/> Billing
                 </Link>
         </li>

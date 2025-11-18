@@ -11,6 +11,10 @@ const Pet = {
       WHERE user_id = ? 
       ORDER BY pet_name ASC`;
     db.query(sql, [user_id], callback);
+  },
+  getById: (pet_id, callback) => {
+    const sql = "SELECT * FROM pet WHERE pet_id = ?";
+    db.query(sql, [pet_id], callback);
   }
 };
 module.exports = Pet;

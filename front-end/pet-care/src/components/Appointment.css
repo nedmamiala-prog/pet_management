@@ -17,6 +17,8 @@
 }
 
 
+
+
 .appointment-container {
   display: flex;
   justify-content: center;
@@ -36,6 +38,7 @@
   max-width: 95%;
   position: relative;
 }
+
 
 
 .right-panel {
