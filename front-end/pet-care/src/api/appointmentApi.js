@@ -105,3 +105,27 @@ export async function HandleAccept(appointment_id) {
     throw error;
   }
 }
+
+export async function UserPet() {
+  const token = localStorage.getItem('token');
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
+  };
+  try {
+    const response = await fetch(`${BASE_URL}/userPet`, {
+      method: 'POST',
+      headers,
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      return { success: false, pets: [], message: data.message || 'Failed to fetch user pets' };
+    }
+    return { success: true, pets: data.pets || [] };  
+  } catch (error) {
+    console.error('Fetch user pets error:', error);
+    return { success: false, pets: [], message: 'Something went wrong while fetching user pets' };
+    
+  };
+}

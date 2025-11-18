@@ -5,7 +5,8 @@ import Sidebar from "./Sidebar";
 import Header from "./Header";    
 import "./AdminAppointmentPage.css";
 import { AppointmentGetAll } from "../api/appointmentApi";
-import {HandleAccept} from "../api/appointmentApi"
+import {HandleAccept} from "../api/appointmentApi";
+import { getAllServices, getAvailableSlots } from "../api/serviceApi";
 
 
 export default function AdminAppointmentPage() {
@@ -15,6 +16,8 @@ export default function AdminAppointmentPage() {
   const [appointments, setAppointments] = useState([]);
   const [error, setError] = useState(null);
   const [isAccepting, setIsAccepting] = useState(false);
+  const [services, setServices] = useState([]);
+  const [serviceSlots, setServiceSlots] = useState({}); 
 
 useEffect(() => {
   async function fetchAllAppointments() {
@@ -44,13 +47,35 @@ useEffect(() => {
     }
   }
   fetchAllAppointments();
-}, [])
+}, []);
+
+
+  useEffect(() => {
+    async function fetchServices() {
+      const response = await getAllServices();
+      if (response.success) {
+        setServices(response.services);
+      
+        const today = new Date().toISOString().split('T')[0];
+        const slotsMap = {};
+        for (const service of response.services) {
+          const slotsResponse = await getAvailableSlots(service.service_name, today);
+          if (slotsResponse.success) {
+            slotsMap[service.service_name] = slotsResponse.allSlots || [];
+          }
+        }
+        setServiceSlots(slotsMap);
+      }
+    }
+    fetchServices();
+  }, []);
+
   const [search, setSearch] = useState("");
 
-const getAvailableTimes = (service) => {
- 
-  return ['09:00', '10:00', '11:00', '13:00', '14:00', '15:00']; // Example times
-};
+  const getAvailableTimes = (service) => {
+  
+    return serviceSlots[service] || [];
+  };
 
   const filtered = useMemo(() => {
     return appointments.filter(a => {

@@ -2,12 +2,16 @@ import React, { useState, useEffect } from "react";
 import "./Appointment.css";
 import { addPet } from "../api/petApi";
 import { createAppointment } from "../api/appointmentApi";
+import { getAllServices, getAvailableSlots } from "../api/serviceApi";
+import { UserPet } from "../api/appointmentApi";
+
+
 
 export default function Appointment({ closeModal }) {
   const [step, setStep] = useState(1);
   const [hasPet, setHasPet] = useState(false);
   const [petId, setPetId] = useState(null);
-  const [pets, setPets] = useState([]); // ✅ FIX: should be an array
+  const [pets, setPets] = useState([]); 
 
   const [petData, setPetData] = useState({
     pet_name: "",
@@ -17,6 +21,9 @@ export default function Appointment({ closeModal }) {
     medical_history: "",
   });
 
+
+
+
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -24,11 +31,15 @@ export default function Appointment({ closeModal }) {
     phone: "",
     notes: "",
     date: "",
-    time: "",
-    service: "",
+  time: "", 
+  services: [], 
   });
 
-  // ✅ Decode token and fill user info
+  const [services, setServices] = useState([]);
+  const [availableSlots, setAvailableSlots] = useState({}); 
+  const [loadingSlots, setLoadingSlots] = useState({}); 
+
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
@@ -43,24 +54,78 @@ export default function Appointment({ closeModal }) {
         console.error("Error decoding token:", err);
       }
     }
-  }, []);
+    
 
-  // ✅ Simulate fetching user's pets
-  useEffect(() => {
-    if (hasPet) {
-      const staticPets = [
-        { pet_id: 1, pet_name: "Buddy", breed: "Golden Retriever", age: 3, gender: "Male" },
-        { pet_id: 2, pet_name: "Mittens", breed: "Persian Cat", age: 2, gender: "Female" },
-        { pet_id: 3, pet_name: "Charlie", breed: "Pug", age: 5, gender: "Male" },
-      ];
-      setPets(staticPets);
-    } else {
-      setPets([]);
-      setPetId(null);
+ 
+    async function fetchServices() {
+      const response = await getAllServices();
+      if (response.success) {
+        setServices(response.services);
+      }
     }
-  }, [hasPet]);
+    fetchServices();
+  }, []);
+  
+useEffect(() => {
+  async function fetchUserPets() {
+    try {
+      const response = await UserPet();
+      if (response.success) {
+        setPets(response.pets);
+      } else {
+        console.error(response.message);
+      }
+    } catch (err) {
+      console.error("Fetch user pets error:", err);
+    }
+  }
 
-  // ✅ Handle input changes
+  fetchUserPets();
+}, []);
+
+
+  useEffect(() => {
+    if (formData.services.length > 0 && formData.date) {
+      formData.services.forEach(serviceName => {
+        setLoadingSlots(prev => ({ ...prev, [serviceName]: true }));
+        
+        getAvailableSlots(serviceName, formData.date)
+          .then((response) => {
+            if (response.success) {
+              const slots = response.availableSlots || [];
+              setAvailableSlots(prev => ({ ...prev, [serviceName]: slots }));
+              
+            
+              const currentTime = formData[`time-${serviceName}`];
+              if (currentTime && !slots.includes(currentTime)) {
+                setFormData((prev) => ({ ...prev, [`time-${serviceName}`]: "" }));
+              }
+              
+              if (slots.length === 0) {
+                console.warn(`No available slots for ${serviceName} on ${formData.date}`);
+              }
+            } else {
+              console.error(`Failed to fetch slots for ${serviceName}:`, response.message);
+              setAvailableSlots(prev => ({ ...prev, [serviceName]: [] }));
+            }
+          })
+          .catch((error) => {
+            console.error(`Error fetching slots for ${serviceName}:`, error);
+            setAvailableSlots(prev => ({ ...prev, [serviceName]: [] }));
+          })
+          .finally(() => {
+            setLoadingSlots(prev => ({ ...prev, [serviceName]: false }));
+          });
+      });
+    } else {
+      setAvailableSlots({});
+      setLoadingSlots({});
+    }
+  }, [formData.services, formData.date]);
+
+
+
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (step === 1) {
@@ -74,30 +139,33 @@ export default function Appointment({ closeModal }) {
     }
   };
 
-  // ✅ Step navigation
+
   const handleNext = () => setStep((prev) => Math.min(prev + 1, 4));
   const prevStep = () => setStep((prev) => Math.max(prev - 1, 1));
 
-  // ✅ Dynamic time slots by service
-  const getAvailableTimes = (service) => {
-    switch (service) {
-      case "General Check-up":
-        return ["09:00 AM", "10:00 AM", "11:00 AM", "02:00 PM", "03:00 PM"];
-      case "Vaccination":
-        return ["09:30 AM", "10:30 AM", "01:00 PM", "02:30 PM"];
-      case "Grooming":
-        return ["10:00 AM", "11:30 AM", "01:30 PM", "03:30 PM"];
-      case "Dental Cleaning":
-        return ["09:00 AM", "11:00 AM", "02:00 PM"];
-      case "Emergency Visit":
-        return ["Anytime (24/7 available)"];
-      default:
-        return [];
+
+  const formatTimeSlot = (time) => {
+    if (time === "Anytime (24/7 available)" || time.includes("Anytime")) {
+      return time;
     }
+
+    if (time.includes(":")) {
+      const [hours, minutes] = time.split(":");
+      const hour = parseInt(hours);
+      const ampm = hour >= 12 ? "PM" : "AM";
+      const displayHour = hour % 12 || 12;
+      return `${displayHour}:${minutes} ${ampm}`;
+    }
+    return time;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+ 
+    const servicesWithTimes = formData.services.filter(serviceName => {
+      return formData[`time-${serviceName}`];
+    });
 
     if (
       formData.firstName &&
@@ -105,45 +173,61 @@ export default function Appointment({ closeModal }) {
       formData.email &&
       formData.phone &&
       formData.date &&
-      formData.time &&
-      formData.service
+      formData.services.length > 0 &&
+      servicesWithTimes.length === formData.services.length
     ) {
       try {
         let finalPetId = petId;
 
-        // ✅ Add new pet if user doesn’t have one
         if (!hasPet) {
           const petResponse = await addPet(petData);
           if (!petResponse.success) throw new Error(petResponse.message);
           finalPetId = petResponse.pet?.pet_id;
         }
 
-        await createAppointment({
-          pet_id: finalPetId,
-          date: formData.date,
-          time: formData.time,
-          service: formData.service,
-          notes: formData.notes,
+   
+        const appointmentPromises = formData.services.map(async (serviceName) => {
+          const time = formData[`time-${serviceName}`];
+          
+          const result = await createAppointment({
+            pet_id: finalPetId,
+            date: formData.date,
+            time: time,
+            service: serviceName,
+            notes: formData.notes
+          });
+          
+          if (!result.success) {
+            throw new Error(`Failed to create appointment for ${serviceName}: ${result.message || 'Unknown error'}`);
+          }
+          
+          return result;
         });
 
-        alert("✅ Appointment booked successfully!");
-        closeModal();
+        const results = await Promise.all(appointmentPromises);
+        console.log('Appointments created:', results);
+     
+     
       } catch (err) {
-        console.error(err);
-        alert("⚠️ Error submitting appointment. Try again.");
+        console.error('Appointment creation error:', err);
+        const errorMessage = err.message || "Error submitting appointments. Try again.";
+        alert(`⚠️ ${errorMessage}`);
       }
     } else {
-      alert("⚠️ Please complete all required fields.");
+      if (servicesWithTimes.length < formData.services.length) {
+        alert("⚠️ Please select a time for all selected services.");
+      } else {
+        alert("⚠️ Please complete all required fields.");
+      }
     }
   };
 
-  // ✅ Generate times dynamically
-  const availableTimes = getAvailableTimes(formData.service);
+
 
   return (
     <div className="appointment-container">
       <div className="appointment-box">
-        {/* Step indicators */}
+
         <div className="steps-indicator">
           {[1, 2, 3, 4].map((num) => (
             <div key={num} className={`step-circle ${step === num ? "active" : ""}`}>
@@ -152,7 +236,7 @@ export default function Appointment({ closeModal }) {
           ))}
         </div>
 
-        {/* Right Info Panel */}
+
         <div className="right-panel">
           <i className="fa-solid fa-paw icon"></i>
           <h2>Book Your Pet's Appointment</h2>
@@ -164,9 +248,9 @@ export default function Appointment({ closeModal }) {
           </p>
         </div>
 
-        {/* Form Section */}
+ 
         <form className="form-panel" onSubmit={handleSubmit}>
-          {/* STEP 1 - PET INFO */}
+       
           {step === 1 && (
             <>
               <h3>Pet Information:</h3>
@@ -189,9 +273,9 @@ export default function Appointment({ closeModal }) {
                     required
                   >
                     <option value="">-- Choose your pet --</option>
-                    {pets.map((pet) => (
+                      {pets.map((pet) => (
                       <option key={pet.pet_id} value={pet.pet_id}>
-                        {pet.pet_name} ({pet.breed}, {pet.age} yrs)
+                        {pet.pet_name}
                       </option>
                     ))}
                   </select>
@@ -257,7 +341,7 @@ export default function Appointment({ closeModal }) {
             </>
           )}
 
-          {/* STEP 2 - OWNER INFO */}
+       
           {step === 2 && (
             <>
               <h3>Pet Owner Info:</h3>
@@ -306,78 +390,133 @@ export default function Appointment({ closeModal }) {
             </>
           )}
 
-          {/* STEP 3 - SERVICE & TIME */}
-          {step === 3 && (
-            <>
-              <h3>Select Pet Care Service:</h3>
-              <select
-                name="service"
-                value={formData.service}
-                onChange={handleChange}
-                required
-              >
-                <option value="">-- Choose Service --</option>
-                <option value="General Check-up">General Check-up</option>
-                <option value="Vaccination">Vaccination</option>
-                <option value="Grooming">Grooming</option>
-                <option value="Dental Cleaning">Dental Cleaning</option>
-                <option value="Emergency Visit">Emergency Visit</option>
-              </select>
+      
+      {step === 3 && (
+  <>
+    <h3>Select Pet Care Service:</h3>
+    {services.map((service) => (
+      <label key={service.service_id}>
+        <input
+          type="checkbox"
+          value={service.service_name}
+          checked={formData.services.includes(service.service_name)}
+          onChange={(e) => {
+            const serviceName = e.target.value;
+            const selected = [...formData.services];
+            if (e.target.checked) {
+              selected.push(serviceName);
+            } else {
+              const index = selected.indexOf(serviceName);
+              if (index > -1) {
+                selected.splice(index, 1);
+             
+                setFormData(prev => {
+                  const newData = { ...prev, services: selected };
+                  delete newData[`time-${serviceName}`];
+                  return newData;
+                });
+               
+                setAvailableSlots(prev => {
+                  const newSlots = { ...prev };
+                  delete newSlots[serviceName];
+                  return newSlots;
+                });
+                setLoadingSlots(prev => {
+                  const newLoading = { ...prev };
+                  delete newLoading[serviceName];
+                  return newLoading;
+                });
+                return;
+              }
+            }
+            setFormData(prev => ({ ...prev, services: selected }));
+          }}
+        />
+        {service.service_name} ({service.duration_minutes} min)
+      </label>
+    ))}
 
-              {formData.service && (
-                <>
-                  <h4>Available Times for {formData.service}:</h4>
-                  <select
-                    name="time"
-                    value={formData.time}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="">-- Select Time --</option>
-                    {availableTimes.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
-                    ))}
-                  </select>
-                </>
+    {formData.services.length > 0 && (
+      <>
+        <input
+          type="date"
+          name="date"
+          value={formData.date}
+          onChange={handleChange}
+          required
+          min={new Date().toISOString().split("T")[0]}
+        />
+
+        {formData.services.map(serviceName => {
+          const serviceInfo = services.find(s => s.service_name === serviceName);
+          return (
+            <div key={serviceName} style={{ marginBottom: '20px', padding: '10px', border: '1px solid #ddd', borderRadius: '5px' }}>
+              <h4>{serviceName} ({serviceInfo?.duration_minutes || 30} min duration):</h4>
+              {loadingSlots[serviceName] ? (
+                <p>Loading available slots...</p>
+              ) : availableSlots[serviceName] && availableSlots[serviceName].length > 0 ? (
+                <select
+                  name={`time-${serviceName}`}
+                  value={formData[`time-${serviceName}`] || ""}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">-- Select Time --</option>
+                  {availableSlots[serviceName].map(slot => (
+                    <option key={slot} value={slot}>
+                      {formatTimeSlot(slot)}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p style={{ color: "#ff6b6b" }}>
+                  No available slots for this service on the selected date.
+                </p>
               )}
+            </div>
+          );
+        })}
+      </>
+    )}
+  </>
+)}
 
-              <input
-                type="date"
-                name="date"
-                value={formData.date}
-                onChange={handleChange}
-                required
-              />
-            </>
-          )}
-
-          {/* STEP 4 - REVIEW & SUBMIT */}
           {step === 4 && (
             <>
               <h3>Review Appointment Details:</h3>
               <ul className="review-list">
-                <li>
-                  <strong>Service:</strong> {formData.service}
-                </li>
-                <li>
-                  <strong>Date:</strong> {formData.date}
-                </li>
-                <li>
-                  <strong>Time:</strong> {formData.time}
-                </li>
                 <li>
                   <strong>Pet:</strong>{" "}
                   {hasPet
                     ? pets.find((p) => p.pet_id == petId)?.pet_name
                     : petData.pet_name}
                 </li>
+                <li>
+                  <strong>Date:</strong> {formData.date}
+                </li>
+                <li>
+                  <strong>Services ({formData.services.length}):</strong>
+                  <ul style={{ marginTop: '10px', marginLeft: '20px' }}>
+                    {formData.services.map(serviceName => {
+                      const serviceInfo = services.find(s => s.service_name === serviceName);
+                      return (
+                        <li key={serviceName}>
+                          {serviceName} ({serviceInfo?.duration_minutes || 30} min) - {formatTimeSlot(formData[`time-${serviceName}`] || "")}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </li>
+                {formData.notes && (
+                  <li>
+                    <strong>Notes:</strong> {formData.notes}
+                  </li>
+                )}
               </ul>
             </>
           )}
 
-          {/* Buttons */}
+      
           <div className="button-group">
             {step > 1 && (
               <button type="button" onClick={prevStep} className="back-btn">
@@ -389,7 +528,7 @@ export default function Appointment({ closeModal }) {
                 Next Step →
               </button>
             ) : (
-              <button type="submit" className="finish-btn">
+              <button type="submit" className="finish-btn"  onClick={closeModal}>
                 Finish ✔
               </button>
             )}

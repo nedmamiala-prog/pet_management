@@ -9,22 +9,13 @@ export default function AuthCallback() {
   useEffect(() => {
     const token = searchParams.get('token');
     const role = searchParams.get('role');
-    const error = searchParams.get('error');
-
-    // Handle error from OAuth callback
-    if (error) {
-      alert(`Authentication error: ${error}`);
-      logoutUser();
-      navigate('/login');
-      return;
-    }
 
     if (token) {
-      // Store token and role in localStorage
+    
       localStorage.setItem('token', token);
       localStorage.setItem('role', role || 'user');
 
-      // Decode token to get user info
+      
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
         if (payload.first_name && payload.last_name) {
@@ -40,14 +31,14 @@ export default function AuthCallback() {
         console.error('Error decoding token:', err);
       }
 
-      // Redirect based on role
+
       if (role === 'admin') {
         navigate('/Admin');
       } else {
         navigate('/UserDashboard');
       }
     } else {
-      // No token and no error - redirect to login
+ 
       alert('Authentication failed. Please try again.');
       logoutUser();
       navigate('/login');

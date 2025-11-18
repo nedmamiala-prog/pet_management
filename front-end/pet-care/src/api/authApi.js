@@ -43,7 +43,7 @@ export async function loginUser(credentials) {
 
     const data = await response.json();
     
-    if (!response.ok) {
+    if (!response.ok) { 
       return data; 
     }
     
@@ -82,31 +82,11 @@ export function logoutUser() {
   localStorage.removeItem('role');
 }
 
-// Google OAuth - Get auth URL
+
 export async function getGoogleAuthUrl() {
   try {
     const response = await fetch(`${BASE_URL}/auth/google`);
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-      console.error('Failed to get Google auth URL:', errorData);
-      throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-    }
-    
     const data = await response.json();
-    
-    if (!data.authUrl) {
-      console.error('No authUrl in response:', data);
-      throw new Error('No auth URL returned from server');
-    }
-    
-    // Validate that it's a Google URL
-    if (!data.authUrl.startsWith('https://accounts.google.com')) {
-      console.error('Invalid auth URL:', data.authUrl);
-      throw new Error('Invalid Google OAuth URL received');
-    }
-    
-    console.log('Google auth URL generated successfully');
     return data.authUrl;
   } catch (error) {
     console.error('Google auth URL error:', error);

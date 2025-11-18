@@ -17,13 +17,13 @@ function UserDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Animate hero text
+
   useEffect(() => {
     const timer = setTimeout(() => setIsVisible(true), 100);
     return () => clearTimeout(timer);
   }, []);
 
-  // Handle modal open/close by hash
+
   useEffect(() => {
     if (location.hash === '#appointment') {
       setShowModal(true);
@@ -79,7 +79,7 @@ function UserDashboard() {
     },
   ];
 
-  // Auto carousel
+  
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentIndex((prevIndex) => (prevIndex + 1) % services.length);

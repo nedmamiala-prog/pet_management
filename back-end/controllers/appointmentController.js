@@ -84,3 +84,24 @@ exports.AppointmentGetAll =  (req, res) => {
 });
  
  }
+
+ exports.UserPet = (req, res) => {
+  const user_id = req.user.id;
+
+  Appointment.userPet(user_id, (err, result) => {
+    if (err) {
+      console.error('User pet fetch error:', err);
+      return res.status(500).json({
+        success: false,
+        message: "Error fetching user pets",
+        error: err
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "User pets fetched successfully",
+      pets: result
+    });
+  });
+};
