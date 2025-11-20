@@ -33,7 +33,7 @@ function Sidebar() {
                 </Link>
         </li>
         <li className= 'sidebar-list-item'>
-            <Link to="#">
+            <Link to="/admin/analytics">
                 <BsBarChart className='icon'/> Analytics
                 </Link>
         </li>
