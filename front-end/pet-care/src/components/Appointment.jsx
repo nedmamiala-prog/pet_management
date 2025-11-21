@@ -146,7 +146,7 @@ useEffect(() => {
   const findServiceByName = (serviceName) => services.find((s) => s.service_name === serviceName);
   const totalCost = formData.services.reduce((sum, serviceName) => {
     const info = findServiceByName(serviceName);
-    return sum + (info?.price || 0);
+    return sum + (Number(info?.price) || 0);
   }, 0);
 
   const formatCurrency = (value) => `₱${Number(value || 0).toFixed(2)}`;
@@ -403,47 +403,49 @@ useEffect(() => {
   <>
    
     <h3>Select Pet Care Service:</h3>
-    {services.map((service) => (
-      <label key={service.service_id}>
-        <input
-          type="checkbox"
-          value={service.service_name}
-          checked={formData.services.includes(service.service_name)}
-          onChange={(e) => {
-            const serviceName = e.target.value;
-            const selected = [...formData.services];
-            if (e.target.checked) {
-              selected.push(serviceName);
-            } else {
-              const index = selected.indexOf(serviceName);
-              if (index > -1) {
-                selected.splice(index, 1);
-             
-                setFormData(prev => {
-                  const newData = { ...prev, services: selected };
-                  delete newData[`time-${serviceName}`];
-                  return newData;
-                });
+    <div style={{ border: '1px solid #ccc', borderRadius: '4px', maxHeight: '200px', overflowY: 'auto', padding: '8px', backgroundColor: '#fff' }}>
+      {services.map((service) => (
+        <label key={service.service_id}  onMouseEnter={(e) => { if (!formData.services.includes(service.service_name)) e.currentTarget.style.backgroundColor = '#f8fafc'; }} onMouseLeave={(e) => { if (!formData.services.includes(service.service_name)) e.currentTarget.style.backgroundColor = 'transparent'; }}>
+          <input
+            type="checkbox"
+            value={service.service_name}
+            checked={formData.services.includes(service.service_name)}
+            onChange={(e) => {
+              const serviceName = e.target.value;
+              const selected = [...formData.services];
+              if (e.target.checked) {
+                selected.push(serviceName);
+              } else {
+                const index = selected.indexOf(serviceName);
+                if (index > -1) {
+                  selected.splice(index, 1);
                
-                setAvailableSlots(prev => {
-                  const newSlots = { ...prev };
-                  delete newSlots[serviceName];
-                  return newSlots;
-                });
-                setLoadingSlots(prev => {
-                  const newLoading = { ...prev };
-                  delete newLoading[serviceName];
-                  return newLoading;
-                });
-                return;
+                  setFormData(prev => {
+                    const newData = { ...prev };
+                    delete newData[`time-${serviceName}`];
+                    return newData;
+                  });
+                
+                  setAvailableSlots(prev => {
+                    const newSlots = { ...prev };
+                    delete newSlots[serviceName];
+                    return newSlots;
+                  });
+                  setLoadingSlots(prev => {
+                    const newLoading = { ...prev };
+                    delete newLoading[serviceName];
+                    return newLoading;
+                  });
+                }
               }
-            }
-            setFormData(prev => ({ ...prev, services: selected }));
-          }}
-        />
-        {service.service_name} ({service.duration_minutes} min) — {formatCurrency(service.price)}
-      </label>
-    ))}
+              setFormData(prev => ({ ...prev, services: selected }));
+            }}
+            style={{ marginRight: '10px', flexShrink: 0, cursor: 'pointer' }}
+          />
+          <span style={{ fontSize: '14px' }}>{service.service_name} ({service.duration_minutes} min) — {formatCurrency(service.price)}</span>
+        </label>
+      ))}
+    </div>
     
 
     {formData.services.length > 0 && (
@@ -523,8 +525,8 @@ useEffect(() => {
                     })}
                   </ul>
                 </li>
-                <li>
-                  <strong>Total Cost:</strong> {formatCurrency(totalCost)}
+                <li style={{ marginTop: '15px'}} >
+                  <strong >Total Cost:</strong> {formatCurrency(totalCost)}
                 </li>
                 {formData.notes && (
                   <li>

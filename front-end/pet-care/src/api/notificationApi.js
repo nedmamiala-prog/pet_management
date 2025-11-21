@@ -46,3 +46,23 @@ export async function getUserNotifications() {
     return { success: false, notifications: [], message: 'Something went wrong while fetching user notifications' };
   }
 }
+
+export async function markNotificationAsRead(notification_id) {
+  try {
+    const response = await fetch(`${BASE_URL}/${notification_id}/read`, {
+      method: 'PUT',
+      headers: buildHeaders(),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return { success: false, message: data.message || 'Error marking notification as read' };
+    }
+
+    return { success: true, message: data.message };
+  } catch (error) {
+    console.error('Mark notification as read error:', error);
+    return { success: false, message: 'Something went wrong while marking notification as read' };
+  }
+}

@@ -50,12 +50,17 @@ const Notification = {
   },
 
   getUserNotification: (user_id, callback) => {
-    const sql = `SELECT * FROM notification WHERE user_id = ? ORDER BY created_at DESC`;
+    const sql = `SELECT * FROM notification WHERE user_id = ? AND status = 'unread' ORDER BY created_at DESC`;
     db.query(sql, [user_id], (err, rows) => {
       if (err) return callback(err);
       const parsed = rows.map(parseRow);
       callback(null, parsed);
     });
+  },
+
+  markAsRead: (notification_id, user_id, callback) => {
+    const sql = "UPDATE notification SET status = 'read' WHERE notification_id = ? AND user_id = ?";
+    db.query(sql, [notification_id, user_id], callback);
   },
 };
 

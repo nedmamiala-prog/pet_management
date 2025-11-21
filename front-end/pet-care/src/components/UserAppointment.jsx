@@ -111,7 +111,7 @@ function AppointmentSection() {
                       </span>
                     </td>
                     <td>
-                      {['pending', 'accepted'].includes(appt.status.toLowerCase()) ? (
+                      {['pending'].includes(appt.status.toLowerCase()) ? (
                         <button
                           className="action-btn cancel"
                           onClick={() => handleCancel(appt)}

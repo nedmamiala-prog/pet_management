@@ -9,6 +9,7 @@ import notify from '../assets/notif.png';
 import Appointment from './Appointment';
 import Notification from './Notification';
 import { logoutUser } from '../api/authApi';
+import { getUserNotifications, markNotificationAsRead } from '../api/notificationApi';
 
 function UserDashboard() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -17,6 +18,8 @@ function UserDashboard() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [scrollY, setScrollY] = useState(0);
   const [notification, setNotification] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [notificationIndex, setNotificationIndex] = useState(0);
   
 
   const navigate = useNavigate();
@@ -26,6 +29,17 @@ function UserDashboard() {
   useEffect(() => {
     const timer = setTimeout(() => setIsVisible(true), 100);
     return () => clearTimeout(timer);
+  }, []);
+
+  // Fetch user notifications
+  useEffect(() => {
+    async function fetchNotifications() {
+      const response = await getUserNotifications();
+      if (response.success && response.notifications.length > 0) {
+        setNotifications(response.notifications);
+      }
+    }
+    fetchNotifications();
   }, []);
 
   // Handle scroll effects
@@ -68,33 +82,40 @@ function UserDashboard() {
     setNotification({ title, message, type });
   };
 
-  const handleNotificationClick = () => {
-    // Example schedule notifications
-    const scheduleNotifications = [
-      {
-        title: '📅 Upcoming Appointment',
-        message: 'Your pet has a vaccination appointment on Nov 20, 2025 at 2:00 PM',
-        type: 'info'
-      },
-      {
-        title: '⏰ Appointment Reminder',
-        message: 'Grooming session scheduled for tomorrow at 10:00 AM',
-        type: 'warning'
-      },
-      {
-        title: '✅ Appointment Completed',
-        message: 'Health checkup was completed successfully',
-        type: 'success'
-      },
-      {
-        title: '🔔 Pending Vaccination',
-        message: 'Your pet needs a booster shot. Book an appointment now!',
-        type: 'warning'
-      }
-    ];
+  const handleNotificationClick = async () => {
+    if (notifications.length === 0) {
+      showNotificationAlert(
+        '📭 No Notifications',
+        'You have no new notifications at the moment.',
+        'info'
+      );
+      return;
+    }
 
-    const randomNotification = scheduleNotifications[Math.floor(Math.random() * scheduleNotifications.length)];
-    showNotificationAlert(randomNotification.title, randomNotification.message, randomNotification.type);
+    const notif = notifications[notificationIndex];
+    const typeMap = {
+      'appointment_reminder': 'warning',
+      'appointment_confirmed': 'success',
+      'appointment_cancelled': 'error',
+      'general': 'info'
+    };
+
+    showNotificationAlert(
+      '🔔 Notification',
+      notif.message,
+      typeMap[notif.type] || 'info'
+    );
+
+    // Mark notification as read
+    await markNotificationAsRead(notif.notification_id);
+
+    // Remove the notification from the list
+    setNotifications(prev => prev.filter(n => n.notification_id !== notif.notification_id));
+    
+    // Reset index if needed
+    if (notificationIndex >= notifications.length - 1) {
+      setNotificationIndex(0);
+    }
   };
 
   const services = [
@@ -181,16 +202,40 @@ function UserDashboard() {
           </nav>
 
           <div className="profile">
-            <button 
-              className="notify-btn"
+            <div
+              className="notif"
               onClick={handleNotificationClick}
-              title="View schedule notifications"
+              style={{ 
+                backgroundImage: `url(${notify})`,
+                cursor: 'pointer',
+                width: '40px',
+                height: '40px',
+                backgroundSize: 'cover',
+                borderRadius: '50%',
+                marginRight: '10px',
+                position: 'relative'
+              }}
             >
-              <div
-                className="notif"
-                style={{ backgroundImage: `url(${notify})` }}
-              ></div>
-            </button>
+              {notifications.length > 0 && (
+                <span style={{
+                  position: 'absolute',
+                  top: '-5px',
+                  right: '-5px',
+                  backgroundColor: '#ef4444',
+                  color: 'white',
+                  borderRadius: '50%',
+                  width: '20px',
+                  height: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '10px',
+                  fontWeight: 'bold'
+                }}>
+                  {notifications.length}
+                </span>
+              )}
+            </div>
             <div
               className="prof"
               onClick={() => navigate('/profile')}

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>PayPal Success</title>
+</head>
+<body>
+  <h2>Payment processing...</h2>
+  <div id="status">Please wait while we confirm your payment.</div>
+
+  <script>
+    async function run() {
+      const params = new URLSearchParams(window.location.search);
+     
+      let orderID = params.get('token') || params.get('orderID') || null;
+
+      
+      try {
+        if (!orderID) orderID = localStorage.getItem('paypal_last_order');
+      } catch (e) {
+        
+      }
+
+      if (!orderID) {
+        document.getElementById('status').innerText = 'Missing order id in return URL.';
+        return;
+      }
+
+     
+      let billingId = null;
+      try {
+        billingId = localStorage.getItem('paypal_billing_id');
+      } catch (e) {
+        
+      }
+
+      try {
+        const captureBody = { orderID };
+        if (billingId) captureBody.billingId = billingId; 
+        
+        const res = await fetch('/api/payment/capture-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(captureBody)
+        });
+        const jsonText = await res.text();
+        let json = null;
+        try { json = jsonText ? JSON.parse(jsonText) : null; } catch(e) { json = { raw: jsonText }; }
+
+        if (res.ok) {
+          document.getElementById('status').innerText = 'Payment completed successfully. You may close this window.';
+          
+          try {
+            if (window.opener && !window.opener.closed) {
+           
+              window.opener.postMessage({ type: 'paypal-payment-complete', orderID }, '*');
+            }
+          } catch (e) {
+            console.error('postMessage error:', e);
+          }
+        } else {
+          document.getElementById('status').innerText = 'Payment capture failed: ' + (json && (json.error || JSON.stringify(json)));
+        }
+      } catch (err) {
+        document.getElementById('status').innerText = 'Network error while capturing payment: ' + err.message;
+      }
+    }
+
+    run();
+  </script>
+</body>
+</html>

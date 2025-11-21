@@ -3,6 +3,17 @@ import { CreditCard } from 'lucide-react';
 import { getUserBilling, payBilling } from '../api/billingApi';
 import './profile.css';
 
+
+function getPaymentMethod(reference) {
+  if (!reference) return null;
+
+  if (reference.match(/^3C|[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}/i)) {
+    return 'PayPal';
+  }
+
+  return reference;
+}
+
 function BillingSection() {
   const [bills, setBills] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,23 +35,70 @@ function BillingSection() {
     fetchBilling();
   }, []);
 
-  const handlePay = async (billing) => {
-    const reference = window.prompt('Enter payment reference (optional):', '');
-    setPayingId(billing.billing_id);
-    const response = await payBilling(billing.billing_id, reference || '');
-    setPayingId(null);
-    if (!response.success) {
-      alert(response.message || 'Payment failed');
-      return;
-    }
+  
+  useEffect(() => {
+    const handleMessage = async (event) => {
+   
 
-    setBills((prev) =>
-      prev.map((bill) =>
-        bill.billing_id === billing.billing_id
-          ? { ...bill, status: 'paid', paid_at: new Date().toISOString() }
-          : bill
-      )
-    );
+      if (event.data && event.data.type === 'paypal-payment-complete') {
+        console.log('PayPal payment completed:', event.data.orderID);
+       
+        try {
+          setLoading(true);
+          const response = await getUserBilling();
+          if (response.success) {
+            setBills(response.bills);
+          } else {
+            console.error('Failed to refresh billing:', response.message);
+          }
+          setLoading(false);
+        } catch (err) {
+          console.error('Failed to refresh billing after payment:', err);
+          setLoading(false);
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  const handlePay = async (billing) => {
+
+    setPayingId(billing.billing_id);
+    try {
+      const res = await fetch('/api/payment/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: billing.amount, billingId: billing.billing_id }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        alert(json.error || 'Failed to create PayPal order');
+        setPayingId(null);
+        return;
+      }
+
+   
+      try {
+        if (json.id) localStorage.setItem('paypal_last_order', json.id);
+        if (billing.billing_id) localStorage.setItem('paypal_billing_id', billing.billing_id);
+      } catch (e) {
+     
+      }
+
+  
+      window.open(json.approvalUrl, '_blank');
+
+   
+
+      alert('PayPal checkout opened. Complete payment in the new window. Refresh to see status.');
+    } catch (err) {
+      console.error(err);
+      alert('Network error starting PayPal checkout: ' + err.message);
+    } finally {
+      setPayingId(null);
+    }
   };
 
   return (
@@ -94,9 +152,19 @@ function BillingSection() {
                       </button>
                     ) : (
                       <span style={{ color: '#94a3b8', fontSize: '13px' }}>
-                        {bill.status === 'paid'
-                          ? new Date(bill.paid_at).toLocaleDateString()
-                          : 'No action'}
+                        {bill.status === 'paid' ? (
+                          <>
+                            Paid on {new Date(bill.paid_at).toLocaleDateString()}
+                            <br />
+                            {getPaymentMethod(bill.payment_reference) && (
+                              <span style={{ fontSize: '12px', color: '#64748b' }}>
+                                via {getPaymentMethod(bill.payment_reference)}
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          'No action'
+                        )}
                       </span>
                     )}
                   </td>

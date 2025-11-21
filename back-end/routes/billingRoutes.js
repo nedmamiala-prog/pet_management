@@ -6,6 +6,12 @@ const middleware = require('../middleware/authToken');
 router.get('/user', middleware.verifyToken, billingController.getUserBilling);
 router.get('/all', middleware.verifyToken, billingController.getAllBilling);
 router.patch('/:billingId/pay', middleware.verifyToken, billingController.markAsPaid);
+router.patch(
+  '/admin/:billingId/pay',
+  middleware.verifyToken,
+  middleware.requireAdmin,
+  billingController.adminMarkAsPaid
+);
 
 module.exports = router;
 

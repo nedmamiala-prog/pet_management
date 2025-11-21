@@ -130,7 +130,7 @@ const notifyAppointmentStatus = async ({ user_id, appointment_id, status, reason
   } else if (status === 'Cancelled') {
     message =
       initiator === 'user'
-        ? 'You cancelled this appointment successfully.'
+        ? 'Cancellation successfull.'
         : `Your appointment was cancelled${reason ? `: ${reason}` : '.'}`;
   } else {
     message = `Appointment status updated: ${status}.`;

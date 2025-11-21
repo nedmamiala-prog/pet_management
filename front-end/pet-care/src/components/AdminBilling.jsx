@@ -1,6 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import './profile.css';
-import { getAllBilling, payBilling } from '../api/billingApi';
+import { getAllBilling, adminPayBilling } from '../api/billingApi';
+
+// Helper to detect payment method from reference
+function getPaymentMethod(reference) {
+  if (!reference) return null;
+  // PayPal order IDs typically start with 3C or contain hyphens (UUID format)
+  if (reference.match(/^3C|[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}/i)) {
+    return 'PayPal';
+  }
+  // Otherwise show the manual entry (cash, check, etc.)
+  return reference;
+}
 
 export default function AdminBilling() {
   const [bills, setBills] = useState([]);
@@ -50,7 +61,7 @@ export default function AdminBilling() {
   const handleMarkPaid = async () => {
     if (!selectedBill) return;
     setUpdating(true);
-    const response = await payBilling(selectedBill.billing_id, reference);
+    const response = await adminPayBilling(selectedBill.billing_id, reference);
     setUpdating(false);
     if (!response.success) {
       alert(response.message || 'Failed to update billing');
@@ -140,9 +151,14 @@ export default function AdminBilling() {
                         Mark as Paid
                       </button>
                     ) : (
-                      <span style={{ color: '#94a3b8', fontSize: '13px' }}>
-                        Paid
-                      </span>
+                      <div style={{ color: '#94a3b8', fontSize: '13px' }}>
+                        <div>Paid on {new Date(bill.paid_at).toLocaleString()}</div>
+                        {getPaymentMethod(bill.payment_reference) && (
+                          <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
+                            via {getPaymentMethod(bill.payment_reference)}
+                          </div>
+                        )}
+                      </div>
                     )}
                   </td>
                 </tr>

@@ -120,6 +120,11 @@
   display: flex;
   gap: 1rem;
 }
+.review-list{
+  list-style: none;
+  padding-left: 50px;
+  text-align: left;
+}
 
 input,
 textarea,

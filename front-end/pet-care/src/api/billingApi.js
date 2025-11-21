@@ -45,6 +45,25 @@ export async function payBilling(billingId, payment_reference = '') {
     return { success: false, message: 'Something went wrong while recording payment' };
   }
 }
+export async function adminPayBilling(billingId, payment_reference = '') {
+  try {
+    const response = await fetch(`${BASE_URL}/admin/${billingId}/pay`, {
+      method: 'PATCH',
+      headers: buildHeaders(),
+      body: JSON.stringify({ payment_reference }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      return { success: false, message: data.message || 'Failed to record payment' };
+    }
+
+    return { success: true, message: data.message || 'Payment recorded' };
+  } catch (error) {
+    console.error('Admin pay billing error:', error);
+    return { success: false, message: 'Something went wrong while recording payment' };
+  }
+}
 
 export async function getAllBilling() {
   try {

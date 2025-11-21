@@ -51,6 +51,23 @@ exports.markAsPaid = (req, res) => {
     });
   });
 };
+exports.adminMarkAsPaid = (req, res) => {
+  const { billingId } = req.params;
+  const { payment_reference } = req.body || {};
+
+  Billing.markPaid(billingId, payment_reference || null, (err) => {
+    if (err) {
+      console.error('Admin billing mark paid error:', err);
+      return res
+        .status(500)
+        .json({ success: false, message: 'Error updating billing status', error: err });
+    }
+
+    return res
+      .status(200)
+      .json({ success: true, message: 'Payment recorded successfully' });
+  });
+};
 
 exports.getAllBilling = (req, res) => {
   Billing.getAllWithUsers((err, bills) => {

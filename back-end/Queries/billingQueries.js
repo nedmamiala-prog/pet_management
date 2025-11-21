@@ -12,10 +12,12 @@ const ensureBillingTable = () => {
       due_date DATETIME NULL,
       paid_at DATETIME NULL,
       payment_reference VARCHAR(100) NULL,
+      paypal_order_id VARCHAR(64) NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       INDEX idx_user (user_id),
       INDEX idx_status (status),
+      INDEX idx_paypal_order_id (paypal_order_id),
       CONSTRAINT fk_billing_appointment FOREIGN KEY (appointment_id) REFERENCES appointment(appointment_id) ON DELETE CASCADE
     )
   `;
@@ -45,6 +47,20 @@ const Billing = {
       WHERE billing_id = ?
     `;
     db.query(sql, [payment_reference, billing_id], callback);
+  },
+
+  setPaypalOrderId: (billing_id, paypalOrderId, callback) => {
+    const sql = `
+      UPDATE billing
+      SET paypal_order_id = ?
+      WHERE billing_id = ?
+    `;
+    db.query(sql, [paypalOrderId, billing_id], callback);
+  },
+
+  getByPaypalOrderId: (paypalOrderId, callback) => {
+    const sql = `SELECT * FROM billing WHERE paypal_order_id = ? LIMIT 1`;
+    db.query(sql, [paypalOrderId], callback);
   },
 
   getByUser: (user_id, callback) => {

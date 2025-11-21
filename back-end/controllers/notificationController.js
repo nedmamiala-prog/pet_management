@@ -44,3 +44,28 @@ exports.getUserNotifications = (req, res) => {
     });
   });
 };
+
+exports.markNotificationAsRead = (req, res) => {
+  const user_id = req.user.id;
+  const { notification_id } = req.params;
+
+  if (!notification_id) {
+    return res.status(400).json({ success: false, message: "Notification ID is required" });
+  }
+
+  Notification.markAsRead(notification_id, user_id, (err, result) => {
+    if (err) {
+      console.error("Mark notification as read error:", err);
+      return res.status(500).json({ success: false, message: "Error marking notification as read", error: err });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: "Notification not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Notification marked as read"
+    });
+  });
+};

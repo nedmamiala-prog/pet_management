@@ -29,6 +29,9 @@ app.use('/billing', billingRoutes);
 
 app.use('/notifications', notificationsRoutes);
 
+app.use("/api/payment", require("./routes/paymentRoutes"));
+
+
 app.listen(5000, () => {
   console.log('Server running on port 5000');
   startNotificationScheduler();
