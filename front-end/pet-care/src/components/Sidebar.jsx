@@ -23,7 +23,7 @@ function Sidebar() {
                 </Link>
         </li>
         <li className= 'sidebar-list-item'>
-            <Link to="#">
+            <Link to="/admin/pet-records">
                 <BsJournalMedical className='icon'/> Pet Records
                 </Link>
         </li>

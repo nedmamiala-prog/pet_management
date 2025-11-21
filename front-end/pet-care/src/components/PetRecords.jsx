@@ -1,0 +1,396 @@
+import React, { useState } from "react";
+import "./PetRecords.css";
+import { FaSearch, FaFilter } from "react-icons/fa";
+import Sidebar from './Sidebar';
+import Header from './Header';
+
+// Thumbnail you uploaded (developer-provided local path)
+const FIGMA_THUMBNAIL = "/mnt/data/2975c55f-667c-464a-92e9-311428588de6.png";
+
+export default function PetRecords() {
+  const initialPets = [
+    { id: "INV-001", owner: "UARMAN", name: "Miso", species: "Cat", gender: "Female", age: "1 year old", records: [
+      { id: "R-1001", service: "Dental Cleaning", data: { diagnosis: "Tartar", recommendation: "Brush 2x/week", savedAt: new Date().toISOString() } }
+    ] },
+    { id: "INV-002", owner: "Skriss Lee", name: "Bim", species: "Cat", gender: "Female", age: "1 year old", records: [] },
+    { id: "INV-003", owner: "Kristine", name: "Chow", species: "Cat", gender: "Female", age: "1 year old", records: [] },
+    { id: "INV-004", owner: "Ran D.", name: "Omen", species: "Cat", gender: "Female", age: "1 year old", records: [] },
+    { id: "INV-005", owner: "Reaten", name: "Yura", species: "Cat", gender: "Female", age: "1 year old", records: [] },
+    { id: "INV-006", owner: "Marly Hoyly", name: "Brimstone", species: "Cat", gender: "Female", age: "1 year old", records: [] },
+    { id: "INV-007", owner: "Bojack", name: "Tinetine", species: "Cat", gender: "Female", age: "1 year old", records: [] },
+  ];
+
+  const SERVICES = [
+    { key: "Dental Cleaning", label: "Dental Cleaning", icon: "🦷" },
+    { key: "Check Up", label: "Check Up", icon: "🔎" },
+    { key: "Grooming", label: "Grooming", icon: "✂️" },
+    { key: "Emergency", label: "Emergency", icon: "⚠️" },
+    { key: "Vaccination", label: "Vaccination", icon: "💉" },
+    { key: "Reminder", label: "Reminder", icon: "🔔" },
+  ];
+
+  const [pets, setPets] = useState(initialPets);
+  const [selectedPet, setSelectedPet] = useState(null);
+
+  // Add record flow (external button)
+  const [openAddRecordSelector, setOpenAddRecordSelector] = useState(false);
+  const [openServiceForm, setOpenServiceForm] = useState(false);
+  const [targetPetId, setTargetPetId] = useState(initialPets[0].id); // pet to add record to
+  const [selectedService, setSelectedService] = useState(null);
+
+  // For both add and edit forms
+  const emptyForm = { diagnosis: "", status: "", medication: "", notes: "", vaccineType: "", lastTaken: "", nextDue: "", groomType: "", reminderType: "", lastDate: "", nextDate: "" };
+  const [formData, setFormData] = useState(emptyForm);
+
+  // Edit flow: open edit form for existing record
+  const [editingRecord, setEditingRecord] = useState(null);
+
+  // open pet profile modal (view)
+  const openPet = (p) => {
+    // ensure we pull latest pet object from pets state
+    const fresh = pets.find(x => x.id === p.id) || p;
+    setSelectedPet(fresh);
+  };
+
+  // helper: save new record to pet id
+  function addRecordToPet(petId, record) {
+    setPets(prev => prev.map(p => p.id === petId ? { ...p, records: [...p.records, record] } : p));
+    // refresh selectedPet view if it's the same pet
+    if (selectedPet && selectedPet.id === petId) {
+      setSelectedPet(prev => ({ ...prev, records: [...prev.records, record] }));
+    }
+  }
+
+  function updateRecordOnPet(petId, recordId, updatedRecord) {
+    setPets(prev => prev.map(p => {
+      if (p.id !== petId) return p;
+      return { ...p, records: p.records.map(r => r.id === recordId ? updatedRecord : r) };
+    }));
+    if (selectedPet && selectedPet.id === petId) {
+      setSelectedPet(prev => ({ ...prev, records: prev.records.map(r => r.id === recordId ? updatedRecord : r) }));
+    }
+  }
+
+  // trigger Add Record flow (external button)
+  const handleOpenAddRecord = () => {
+    setTargetPetId(initialPets[0].id);
+    setSelectedService(null);
+    setFormData(emptyForm);
+    setOpenAddRecordSelector(true);
+  };
+
+  // when selecting a category in selector: store selection and open top form
+  const handleChooseService = (serviceKey) => {
+    setSelectedService(serviceKey);
+    setFormData(emptyForm);
+    setOpenServiceForm(true);
+  };
+
+  // submit add record form
+  const handleSaveNewRecord = (e) => {
+    e.preventDefault();
+    if (!selectedService) return;
+    const newRecord = {
+      id: `R-${Date.now()}`,
+      service: selectedService,
+      data: { ...formData, savedAt: new Date().toISOString() }
+    };
+    addRecordToPet(targetPetId, newRecord);
+    // close service form & selector
+    setOpenServiceForm(false);
+    setOpenAddRecordSelector(false);
+    setSelectedService(null);
+    setFormData(emptyForm);
+  };
+
+  // open edit form for a specific record (from within pet modal)
+  const handleEditRecord = (petId, record) => {
+    setEditingRecord({ petId, record });
+    setSelectedService(record.service);
+    // populate formData with record.data fields mapped sensibly
+    const d = record.data || {};
+    setFormData({
+      diagnosis: d.diagnosis || "",
+      status: d.status || "",
+      medication: d.medication || "",
+      notes: d.notes || "",
+      vaccineType: d.vaccineType || "",
+      lastTaken: d.lastTaken ? d.lastTaken.split("T")[0] : "",
+      nextDue: d.nextDue ? d.nextDue.split("T")[0] : "",
+      groomType: d.groomType || "",
+      reminderType: d.reminderType || "",
+      lastDate: d.lastDate || "",
+      nextDate: d.nextDate || ""
+    });
+    setOpenServiceForm(true);
+  };
+
+  // save edited record
+  const handleSaveEditedRecord = (e) => {
+    e.preventDefault();
+    if (!editingRecord) return;
+    const updatedRecord = {
+      id: editingRecord.record.id,
+      service: selectedService,
+      data: { ...formData, savedAt: new Date().toISOString() }
+    };
+    updateRecordOnPet(editingRecord.petId, editingRecord.record.id, updatedRecord);
+    // close
+    setEditingRecord(null);
+    setOpenServiceForm(false);
+    setSelectedService(null);
+    setFormData(emptyForm);
+  };
+
+  return (
+    <div className="grid-container">
+      <Sidebar />
+      <Header />
+
+      <main className="main-container">
+        <div className="petrecord-container">
+
+          {/* HEADER: single Add Pet Record button */}
+          <div className="record-header">
+            <div>
+              <h2>Pet Record</h2>
+              <p>Manage and track all billing transactions</p>
+            </div>
+            <button className="add-btn" onClick={handleOpenAddRecord}>Add Pet Record +</button>
+          </div>
+
+          {/* CARDS */}
+          <div className="stats-cards">
+            <div className="stat-box">
+              <h4>Total Users</h4>
+              <h2>100</h2>
+            </div>
+            <div className="stat-box">
+              <h4>Total Pets Registered</h4>
+              <h2>{pets.length}</h2>
+            </div>
+          </div>
+
+          {/* SEARCH */}
+          <div className="search-container">
+            <FaSearch className="search-icon" />
+            <input type="text" placeholder="Search by pet name or owner name" />
+          </div>
+
+          {/* FILTERS */}
+          <div className="filters">
+            <button><FaFilter /> Filters</button>
+            <select><option>Species</option></select>
+            <select><option>Gender</option></select>
+            <select><option>Age</option></select>
+          </div>
+
+          {/* TABLE */}
+          <div className="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Pet Profile</th>
+                  <th>Owner Name</th>
+                  <th>Pet Name</th>
+                  <th>Species</th>
+                  <th>Gender</th>
+                  <th>Age</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {pets.map((p) => (
+                  <tr key={p.id}>
+                    <td><div className="pet-img-box"></div></td>
+                    <td>{p.owner}</td>
+                    <td>{p.name}</td>
+                    <td>{p.species}</td>
+                    <td>{p.gender}</td>
+                    <td>{p.age}</td>
+                    <td>
+                      <button className="view-btn" onClick={() => openPet(p)}>View</button>
+                      <button className="delete-btn" onClick={() => setPets(prev => prev.filter(x => x.id !== p.id))}>Delete</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+
+            </table>
+          </div>
+
+          {/* ======================
+              PET PROFILE MODAL (view & edit records)
+             ====================== */}
+          {selectedPet && (
+            <div className="modal-overlay" onClick={() => setSelectedPet(null)}>
+              <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+
+                <div className="modal-profile-section">
+                  <div className="modal-image"></div>
+
+                  <div className="modal-profile-info">
+                    <h2>{selectedPet.name}</h2>
+
+                    <div className="modal-info-grid">
+                      <div><strong>Owner:</strong> {selectedPet.owner}</div>
+                      <div><strong>Species:</strong> {selectedPet.species}</div>
+                      <div><strong>Gender:</strong> {selectedPet.gender}</div>
+                      <div><strong>Age:</strong> {selectedPet.age}</div>
+                    </div>
+
+                    <div style={{ marginTop: 12 }}>
+                      <button className="modal-edit-btn" onClick={() => { setOpenAddRecordSelector(true); setTargetPetId(selectedPet.id); }}>Add / Edit Record</button>
+                    </div>
+                  </div>
+                </div>
+
+                <h3 className="section-title">Medical Record</h3>
+
+                <div style={{ display: "grid", gap: 12 }}>
+                  {selectedPet.records.length === 0 && <div className="record-box">No records yet.</div>}
+                  {selectedPet.records.map(r => (
+                    <div className="record-box" key={r.id}>
+                      <div className="record-header-row">
+                        <h4>{r.service}</h4>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <button className="record-edit-btn" onClick={() => handleEditRecord(selectedPet.id, r)}>Edit</button>
+                        </div>
+                      </div>
+                      <div style={{ marginTop: 8 }}>
+                        {/* simple pretty display */}
+                        {Object.entries(r.data).map(([k, v]) => (
+                          k !== "savedAt" && <p key={k}><strong>{k.charAt(0).toUpperCase() + k.slice(1)}:</strong> {String(v)}</p>
+                        ))}
+                        <div style={{ fontSize: 12, color: "#666", marginTop: 6 }}>Saved: {new Date(r.data.savedAt).toLocaleString()}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <button className="close-modal-btn" onClick={() => setSelectedPet(null)}>Close</button>
+              </div>
+            </div>
+          )}
+
+          {/* ======================
+              ADD RECORD: CATEGORY SELECTOR (opened from external Add Pet Record or from inside pet modal)
+             ====================== */}
+          {openAddRecordSelector && (
+            <div className="modal-overlay top" onClick={() => { setOpenAddRecordSelector(false); setSelectedService(null); }}>
+              <div className="selector-container" onClick={(e) => e.stopPropagation()}>
+                <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+                  <img src={FIGMA_THUMBNAIL} alt="selector" className="selector-thumb" />
+                  <div>
+                    <h3 style={{ margin: 0 }}>Add Pet Record</h3>
+                    <p style={{ margin: 0, color: "#6b6b6b" }}>Choose service category and target pet</p>
+                  </div>
+                </div>
+
+                <div style={{ marginTop: 12 }}>
+                  <label style={{ fontSize: 13, color: "#555" }}>Select Pet</label>
+                  <select style={{ width: "100%", padding: 10, borderRadius: 10, marginTop: 8 }} value={targetPetId} onChange={e => setTargetPetId(e.target.value)}>
+                    {pets.map(p => <option key={p.id} value={p.id}>{p.name} — {p.owner}</option>)}
+                  </select>
+                </div>
+
+                <div className="services-grid" style={{ marginTop: 14 }}>
+                  {SERVICES.map(s => (
+                    <button key={s.key} className="service-option" onClick={() => handleChooseService(s.key)}>
+                      <div className="service-icon">{s.icon}</div>
+                      <div style={{ marginTop: 10, fontWeight: 700 }}>{s.label}</div>
+                    </button>
+                  ))}
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 12 }}>
+                  <button className="close-small" onClick={() => setOpenAddRecordSelector(false)}>Cancel</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ======================
+              SERVICE FORM MODAL (top-most) — used for both Add & Edit
+             ====================== */}
+          {openServiceForm && (
+            <div className="modal-overlay topmost" onClick={() => {
+              setOpenServiceForm(false);
+              setEditingRecord(null);
+              setSelectedService(null);
+            }}>
+              <div className="form-container" onClick={(e) => e.stopPropagation()}>
+                <h3 style={{ marginTop: 0 }}>{editingRecord ? `Edit — ${selectedService}` : `Add — ${selectedService}`}</h3>
+
+                <form onSubmit={editingRecord ? handleSaveEditedRecord : handleSaveNewRecord} style={{ display: "grid", gap: 10 }}>
+                  {/* fields per service */}
+                  {(selectedService === "Dental Cleaning" || selectedService === "Check Up" || selectedService === "Emergency") && (
+                    <>
+                      <label>Diagnosis</label>
+                      <input value={formData.diagnosis} onChange={e => setFormData(f => ({ ...f, diagnosis: e.target.value }))} />
+
+                      <label>Notes</label>
+                      <textarea rows="3" value={formData.notes} onChange={e => setFormData(f => ({ ...f, notes: e.target.value }))} />
+                    </>
+                  )}
+
+                  {selectedService === "Check Up" && (
+                    <>
+                      <label>Status</label>
+                      <input value={formData.status} onChange={e => setFormData(f => ({ ...f, status: e.target.value }))} />
+                      <label>Medication</label>
+                      <input value={formData.medication} onChange={e => setFormData(f => ({ ...f, medication: e.target.value }))} />
+                    </>
+                  )}
+
+                  {selectedService === "Grooming" && (
+                    <>
+                      <label>Type of Grooming</label>
+                      <input value={formData.groomType} onChange={e => setFormData(f => ({ ...f, groomType: e.target.value }))} />
+                      <label>Preferred Style / Notes</label>
+                      <textarea rows="2" value={formData.notes} onChange={e => setFormData(f => ({ ...f, notes: e.target.value }))} />
+                    </>
+                  )}
+
+                  {selectedService === "Vaccination" && (
+                    <>
+                      <label>Type of Vaccine</label>
+                      <input value={formData.vaccineType} onChange={e => setFormData(f => ({ ...f, vaccineType: e.target.value }))} />
+                      <label>Last Taken</label>
+                      <input type="date" value={formData.lastTaken} onChange={e => setFormData(f => ({ ...f, lastTaken: e.target.value }))} />
+                      <label>Next Due</label>
+                      <input type="date" value={formData.nextDue} onChange={e => setFormData(f => ({ ...f, nextDue: e.target.value }))} />
+                    </>
+                  )}
+
+                  {selectedService === "Reminder" && (
+                    <>
+                      <label>Reminder Type</label>
+                      <input value={formData.reminderType} onChange={e => setFormData(f => ({ ...f, reminderType: e.target.value }))} />
+                      <label>Last Date</label>
+                      <input type="date" value={formData.lastDate} onChange={e => setFormData(f => ({ ...f, lastDate: e.target.value }))} />
+                      <label>Next Date</label>
+                      <input type="date" value={formData.nextDate} onChange={e => setFormData(f => ({ ...f, nextDate: e.target.value }))} />
+                    </>
+                  )}
+
+                  <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                    <button type="button" className="close-small" onClick={() => {
+                      setOpenServiceForm(false);
+                      setEditingRecord(null);
+                      setSelectedService(null);
+                    }}>Cancel</button>
+
+                    <button type="submit" className="modal-save-btn">{editingRecord ? "Save changes" : "Save"}</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+        </div>
+      </main>
+    </div>
+  );
+}

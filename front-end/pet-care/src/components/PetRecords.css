@@ -1,0 +1,378 @@
+.petrecord-container {
+  padding: 2rem;
+  font-family: "Poppins", sans-serif;
+  margin-left: 260px;
+}
+
+.record-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.add-btn {
+  background: #6b9ee6;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 10px;
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.stats-cards {
+  display: flex;
+  gap: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.stat-box {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 15px;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+  width: 220px;
+}
+
+.search-container {
+  margin-top: 1.5rem;
+  background: #f4f7ff;
+  padding: 12px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.search-container input {
+  border: none;
+  background: none;
+  outline: none;
+  width: 100%;
+}
+
+.filters {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.filters select,
+.filters button {
+  padding: 10px 15px;
+  border-radius: 10px;
+  border: none;
+  background: #f4f7ff;
+  cursor: pointer;
+}
+
+.table-wrapper {
+  margin-top: 2rem;
+  background: white;
+  padding: 2rem;
+  border-radius: 20px;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  text-align: left;
+  padding-bottom: 1rem;
+  color: #6b6b6b;
+}
+
+td {
+  padding: 1rem 0;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.pet-img-box {
+  width: 40px;
+  height: 40px;
+  background: #dcdcdc;
+  border-radius: 10px;
+}
+
+.view-btn {
+  background: #6ba6ff;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+}
+
+.delete-btn {
+  background: #ff6b6b;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  margin-left: 8px;
+}
+
+/* POPUP */
+
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.popup-card {
+  background: white;
+  padding: 2rem;
+  width: 420px;
+  border-radius: 18px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.2);
+}
+
+.close-popup {
+  margin-top: 1.2rem;
+  padding: 10px 16px;
+  background: #6b9ee6;
+  border: none;
+  border-radius: 10px;
+  color: white;
+  cursor: pointer;
+}
+/* ==== MODAL OVERLAY ==== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 5000;
+}
+
+/* ==== MAIN MODAL BOX ==== */
+.modal-container {
+  width: 650px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #f8fbff;
+  border-radius: 22px;
+  padding: 2rem;
+  box-shadow: 0 6px 25px rgba(0,0,0,0.2);
+  animation: fadeIn 0.25s ease-in-out;
+  font-family: "Poppins", sans-serif;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* ==== TOP PROFILE SECTION ==== */
+.modal-profile-section {
+  display: flex;
+  gap: 1.5rem;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 20px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+}
+
+.modal-image {
+  width: 120px;
+  height: 120px;
+  background: #d9d9d9;
+  border-radius: 50%;
+}
+
+.modal-profile-info h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.modal-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  margin-top: 12px;
+  gap: 8px;
+  font-size: 0.95rem;
+}
+
+.modal-edit-btn {
+  margin-top: 10px;
+  padding: 8px 14px;
+  background: #6ba6ff;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+}
+
+/* ==== SECTION TITLES ==== */
+.section-title {
+  margin-top: 2rem;
+  font-size: 1.2rem;
+  color: #4d4d4d;
+}
+
+/* ==== RECORD BOX STYLE ==== */
+.record-box {
+  background: #dff0ff;
+  padding: 1.2rem;
+  border-radius: 15px;
+  margin-top: 1rem;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+}
+
+.record-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.record-edit-btn {
+  background: #6ba6ff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+}
+
+
+.close-modal-btn {
+  margin-top: 2rem;
+  width: 100%;
+  padding: 12px;
+  border: none;
+  background: #6b9ee6;
+  color: white;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+/* ---------- New / stacked modal styles (keeps your existing look) ---------- */
+
+/* stacked overlay levels */
+.modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.45); display:flex; justify-content:center; align-items:center; z-index:3000; }
+.modal-overlay.top { z-index:3500; }
+.modal-overlay.topmost { z-index:4000; }
+
+/* main pet modal (keeps your colors/rounded look) */
+.modal-container {
+  width: 650px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #f8fbff;
+  border-radius: 22px;
+  padding: 1.6rem;
+  box-shadow: 0 6px 25px rgba(0,0,0,0.2);
+  animation: fadeIn .18s ease-in-out;
+  font-family: "Poppins", sans-serif;
+}
+
+/* selector modal card */
+.selector-container {
+  width: 720px;
+  max-width: calc(100% - 40px);
+  background: #eef7ff;
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.18);
+}
+
+/* topmost form modal */
+.form-container {
+  width: 560px;
+  max-width: calc(100% - 40px);
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+/* thumbnail image in selector (uses uploaded file path) */
+.selector-thumb {
+  width: 120px;
+  height: 86px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid rgba(0,0,0,0.06);
+}
+
+/* services grid — icon cards */
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+/* service option card */
+.service-option {
+  background: white;
+  border: 1px solid rgba(0,0,0,0.06);
+  padding: 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 700;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.service-option:hover { transform: translateY(-6px); box-shadow: 0 10px 22px rgba(0,0,0,0.08); }
+
+/* icon circle (matches your blue) */
+.service-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size: 24px;
+  background: linear-gradient(180deg, rgba(107,158,230,0.12), rgba(107,158,230,0.06));
+  color: #2b6fb8;
+  border: 1px solid rgba(107,158,230,0.18);
+}
+
+/* small cancel button */
+.close-small {
+  background: #ffe9e9;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #8b2b2b;
+}
+
+/* save/call-to-action */
+.modal-save-btn { background: #2ec27e; color: white; padding: 8px 12px; border: none; border-radius: 8px; cursor: pointer; }
+
+/* keep consistent modal-area look for the profile section */
+.modal-profile-section { display:flex; gap:1rem; background: white; padding: 12px; border-radius: 12px; box-shadow: 0 3px 8px rgba(0,0,0,0.06); }
+.modal-image { width: 96px; height: 96px; background: #d9d9d9; border-radius: 50%; }
+
+/* record box matches your existing record-box */
+.record-box { background: #dff0ff; padding: 12px; border-radius: 12px; margin-top: 10px; box-shadow: 0 3px 8px rgba(0,0,0,0.06); }
+.record-header-row { display:flex; justify-content:space-between; align-items:center; }
+
+/* responsive */
+@media (max-width: 720px) {
+  .modal-container { width: calc(100% - 24px); padding: 12px; }
+  .selector-container { width: calc(100% - 24px); }
+  .form-container { width: calc(100% - 24px); }
+  .services-grid { grid-template-columns: repeat(2, 1fr); }
+}

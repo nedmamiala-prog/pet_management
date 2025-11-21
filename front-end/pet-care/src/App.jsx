@@ -13,6 +13,7 @@ import Logout from './components/Logout';
 import AuthCallback from './components/AuthCallback';
 import AdminBilling from './components/AdminBilling';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
+import PetRecords from './components/PetRecords';
 import { getToken } from './api/authApi';
 
 const PrivateRoute = ({ element }) => {
@@ -37,7 +38,7 @@ function App() {
         <Route path="/admin/appointments" element={<PrivateRoute element={<AdminAppointmentPage />} />} /> 
         <Route path="/admin/billing" element={<PrivateRoute element={<AdminBilling />} />} />
         <Route path="/admin/analytics" element={<PrivateRoute element={<AnalyticsDashboard />} />} />
-   
+        <Route path="/admin/pet-records" element={<PrivateRoute element={<PetRecords />} />} />  
       </Routes>
 
   );

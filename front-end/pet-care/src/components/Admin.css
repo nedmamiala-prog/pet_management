@@ -238,4 +238,93 @@
   
   #sidebar::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.5);
-  }
+  }/* -------- Pending & Recent Activity Section -------- */
+
+.approval-section {
+  margin-top: 3rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+/* PENDING APPROVALS */
+.pending-box {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 24px rgba(162, 213, 245, 0.2);
+  border: 1px solid rgb(212, 219, 255);
+}
+
+.section-title {
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+  color: #303f9f;
+}
+
+.pending-item {
+  padding: 1rem;
+  background: #e9f1ff;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+}
+
+.btn-group {
+  margin-top: 0.7rem;
+  display: flex;
+  gap: 1rem;
+}
+
+.approve-btn {
+  background: #6ee87a;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.decline-btn {
+  background: #ef6a6a;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* RECENT ACTIVITY */
+.activity-box {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 24px rgba(162, 213, 245, 0.2);
+  border: 1px solid rgb(212, 219, 255);
+}
+
+.activity-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  align-items: center;
+}
+
+.activity-item p {
+  margin: 0;
+  font-weight: 500;
+}
+
+.activity-item span {
+  font-size: 0.8rem;
+  color: #444;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  background: #7a7aff;
+  border-radius: 50%;
+}
