@@ -15,6 +15,7 @@ const appointmentRoutes = require('./routes/appointmentRoutes');
 const serviceRoutes = require('./routes/serviceRoutes');
 const notificationsRoutes = require('./routes/notificationRoutes');
 const billingRoutes = require('./routes/billingRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
 const { startNotificationScheduler } = require('./services/notificationScheduler');
 
 
@@ -28,6 +29,8 @@ app.use('/services', serviceRoutes);
 app.use('/billing', billingRoutes);
 
 app.use('/notifications', notificationsRoutes);
+
+app.use('/analytics', analyticsRoutes);
 
 app.use("/api/payment", require("./routes/paymentRoutes"));
 

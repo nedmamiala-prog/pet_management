@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './profile.css';
+import './AdminAppointmentPage.css';
+import Sidebar from './Sidebar';
+import Header from './Header';
 import { getAllBilling, adminPayBilling } from '../api/billingApi';
+import { FaSearch } from 'react-icons/fa';
 
 // Helper to detect payment method from reference
 function getPaymentMethod(reference) {
@@ -22,6 +27,9 @@ export default function AdminBilling() {
   const [selectedBill, setSelectedBill] = useState(null);
   const [reference, setReference] = useState('');
   const [updating, setUpdating] = useState(false);
+  const [notification, setNotification] = useState(null);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     async function fetchBilling() {
@@ -58,13 +66,20 @@ export default function AdminBilling() {
     setReference('');
   };
 
+  const closeNotification = () => {
+    setNotification(null);
+  };
+
   const handleMarkPaid = async () => {
     if (!selectedBill) return;
     setUpdating(true);
     const response = await adminPayBilling(selectedBill.billing_id, reference);
     setUpdating(false);
     if (!response.success) {
-      alert(response.message || 'Failed to update billing');
+      setNotification({
+        title: 'Payment update failed',
+        message: response.message || 'Failed to update billing',
+      });
       return;
     }
 
@@ -81,36 +96,73 @@ export default function AdminBilling() {
       )
     );
     closeModal();
+    setNotification({
+      title: 'Payment recorded',
+      message: 'Invoice has been marked as paid.',
+    });
   };
 
   return (
-    <div className="content-area" style={{ padding: '40px' }}>
-      <div className="section-title">
-        Admin Billing Management
-      </div>
+    <div className="grid-container-admin">
+      <Sidebar />
+      <Header />
+      <main className="main-container">
+        <div className="admin-appointment-wrapper">
+          <div className="top-row">
+            <div className="page-title">
+              <h3>Admin Billing Management</h3>
+              <h4>Review invoices and record payments</h4>
+            </div>
+          </div>
 
-      <div className="billing-controls" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-        <input
-          type="text"
-          placeholder="Search invoice/user/email..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ flex: 1, padding: '0.5rem', borderRadius: '8px', border: '1px solid #ddd' }}
-        />
-        <select
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid #ddd' }}
-        >
-          <option value="all">All statuses</option>
-          <option value="pending">Pending</option>
-          <option value="overdue">Overdue</option>
-          <option value="paid">Paid</option>
-          <option value="void">Void</option>
-        </select>
-      </div>
+          <div className="controls-row">
+            <div className="tabs-container">
+              <button
+                className={`tab-btn ${filter === 'all' ? 'active' : ''}`}
+                onClick={() => setFilter('all')}
+              >
+                All
+              </button>
+              <button
+                className={`tab-btn ${filter === 'pending' ? 'active' : ''}`}
+                onClick={() => setFilter('pending')}
+              >
+                Pending
+              </button>
+              <button
+                className={`tab-btn ${filter === 'overdue' ? 'active' : ''}`}
+                onClick={() => setFilter('overdue')}
+              >
+                Overdue
+              </button>
+              <button
+                className={`tab-btn ${filter === 'paid' ? 'active' : ''}`}
+                onClick={() => setFilter('paid')}
+              >
+                Paid
+              </button>
+              <button
+                className={`tab-btn ${filter === 'void' ? 'active' : ''}`}
+                onClick={() => setFilter('void')}
+              >
+                Void
+              </button>
+            </div>
 
-      <div className="billing-table">
+            <div className="search-box">
+              <FaSearch className="search-icon" />
+              <input
+                type="text"
+                placeholder="Search invoice, user or email..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+
+            <div></div>
+          </div>
+
+          <div className="billing-table">
         {loading ? (
           <p style={{ padding: '20px' }}>Loading billing records...</p>
         ) : error ? (
@@ -166,29 +218,43 @@ export default function AdminBilling() {
             </tbody>
           </table>
         )}
-      </div>
-
-      {selectedBill && (
-        <div className="cancel-modal-overlay">
-          <div className="cancel-modal" style={{ maxWidth: '420px' }}>
-            <h3>Mark Invoice #{selectedBill.billing_id} as Paid</h3>
-            <p>Optional: add a payment reference or receipt number.</p>
-            <input
-              type="text"
-              placeholder="Payment reference (optional)"
-              value={reference}
-              onChange={(e) => setReference(e.target.value)}
-              style={{ width: '100%', padding: '0.5rem', marginBottom: '1rem', borderRadius: '8px', border: '1px solid #ddd' }}
-            />
-            <div className="modal-actions">
-              <button className="back-btn" onClick={closeModal}>Cancel</button>
-              <button className="decline-btn" onClick={handleMarkPaid} disabled={updating}>
-                {updating ? 'Updating...' : 'Confirm Paid'}
-              </button>
-            </div>
           </div>
+
+          {selectedBill && (
+            <div className="cancel-modal-overlay">
+              <div className="cancel-modal" style={{ maxWidth: '420px' }}>
+                <h3>Mark Invoice #{selectedBill.billing_id} as Paid</h3>
+                <p>Optional: add a payment reference or receipt number.</p>
+                <input
+                  type="text"
+                  placeholder="Payment reference (optional)"
+                  value={reference}
+                  onChange={(e) => setReference(e.target.value)}
+                  style={{ width: '100%', padding: '0.5rem', marginBottom: '1rem', borderRadius: '8px', border: '1px solid #ddd' }}
+                />
+                <div className="modal-actions">
+                  <button className="back-btn" onClick={closeModal}>Cancel</button>
+                  <button className="decline-btn" onClick={handleMarkPaid} disabled={updating}>
+                    {updating ? 'Updating...' : 'Confirm Paid'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {notification && (
+            <div className="cancel-modal-overlay">
+              <div className="cancel-modal" style={{ maxWidth: '380px' }}>
+                <h3>{notification.title}</h3>
+                <p>{notification.message}</p>
+                <div className="modal-actions">
+                  <button className="back-btn" onClick={closeNotification}>Close</button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </main>
     </div>
   );
 }

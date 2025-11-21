@@ -1,7 +1,7 @@
 const Notification = require('../Queries/notificationQueries');
 const NotificationSchedule = require('../Queries/notificationScheduleQueries');
 const User = require('../Queries/UserQueries');
-const { sendSms, isConfigured: smsConfigured } = require('./smsService');
+const { sendEmail, isConfigured: emailConfigured } = require('./emailService');
 
 const formatDateTime = (date) =>
   date.toLocaleString('en-US', {
@@ -17,7 +17,7 @@ const safeDate = (value) => {
   return Number.isNaN(date.getTime()) ? null : date;
 };
 
-const SMS_SUPPORTED_TYPES = new Set([
+const EMAIL_SUPPORTED_TYPES = new Set([
   'appointment_reminder_24h',
   'appointment_reminder_3h',
   'appointment_accepted',
@@ -43,31 +43,48 @@ const scheduleReminder = ({ user_id, appointment_id, type, send_at, message, met
     );
   });
 
-const getUserPhoneNumber = (user_id) =>
+const getUserEmail = (user_id) =>
   new Promise((resolve) => {
     if (!user_id) return resolve(null);
     User.findById(user_id, (err, rows) => {
       if (err || !rows || rows.length === 0) {
         if (err) {
-          console.error('User lookup error (SMS):', err);
+          console.error('User lookup error (Email):', err);
         }
         return resolve(null);
       }
-      resolve(rows[0].phone_number || null);
+      resolve((rows && rows[0] && rows[0].email) || null);
     });
   });
 
-const maybeSendSms = async (user_id, type, message) => {
-  if (!smsConfigured) return;
-  if (!SMS_SUPPORTED_TYPES.has(type)) return;
+const getEmailSubjectForType = (type) => {
+  if (type === 'appointment_reminder_24h' || type === 'appointment_reminder_3h') {
+    return 'Appointment Reminder';
+  }
+  if (type === 'appointment_accepted') {
+    return 'Appointment Accepted';
+  }
+  if (type === 'appointment_cancelled') {
+    return 'Appointment Cancelled';
+  }
+  if (type === 'payment_due') {
+    return 'Payment Due';
+  }
+  return 'Notification';
+};
+
+const maybeSendEmail = async (user_id, type, message) => {
+  if (!emailConfigured) return;
+  if (!EMAIL_SUPPORTED_TYPES.has(type)) return;
   if (!message) return;
 
   try {
-    const phone = await getUserPhoneNumber(user_id);
-    if (!phone) return;
-    await sendSms(phone, message);
+    const email = await getUserEmail(user_id);
+    if (!email) return;
+    const subject = getEmailSubjectForType(type);
+    await sendEmail({ to: email, subject, text: message });
   } catch (err) {
-    console.error('SMS notification error:', err.message || err);
+    console.error('Email notification error:', err.message || err);
   }
 };
 
@@ -84,9 +101,9 @@ const dispatchNotification = ({ user_id, type = 'info', message, metadata = {} }
       async (err, result) => {
         if (err) return reject(err);
         try {
-          await maybeSendSms(user_id, type, message);
-        } catch (smsErr) {
-          console.error('SMS dispatch error:', smsErr.message || smsErr);
+          await maybeSendEmail(user_id, type, message);
+        } catch (emailErr) {
+          console.error('Email dispatch error:', emailErr.message || emailErr);
         }
         resolve(result);
       }

@@ -38,6 +38,7 @@ export default function Appointment({ closeModal }) {
   const [services, setServices] = useState([]);
   const [availableSlots, setAvailableSlots] = useState({}); 
   const [loadingSlots, setLoadingSlots] = useState({}); 
+  const [notification, setNotification] = useState(null);
 
 
   useEffect(() => {
@@ -219,13 +220,22 @@ useEffect(() => {
       } catch (err) {
         console.error('Appointment creation error:', err);
         const errorMessage = err.message || "Error submitting appointments. Try again.";
-        alert(`⚠️ ${errorMessage}`);
+        setNotification({
+          title: 'Booking failed',
+          message: errorMessage,
+        });
       }
     } else {
       if (servicesWithTimes.length < formData.services.length) {
-        alert("⚠️ Please select a time for all selected services.");
+        setNotification({
+          title: 'Missing time selection',
+          message: 'Please select a time for all selected services.',
+        });
       } else {
-        alert("⚠️ Please complete all required fields.");
+        setNotification({
+          title: 'Incomplete details',
+          message: 'Please complete all required fields.',
+        });
       }
     }
   };
@@ -556,6 +566,22 @@ useEffect(() => {
           </div>
         </form>
       </div>
+
+      {notification && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <button
+              type="button"
+              className="close-modal"
+              onClick={() => setNotification(null)}
+            >
+              ×
+            </button>
+            <h3>{notification.title}</h3>
+            <p>{notification.message}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

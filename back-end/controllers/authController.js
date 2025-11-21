@@ -84,7 +84,7 @@ exports.login = async (req, res) => {
     
     Admin.findByUsername(username, (err, adminResults) => {
       if (err) return res.status(500).json({message: "Database error"});
-      if (adminResults.length === 0) return res.status(404).json({message: "User not found"});
+      if (adminResults.length === 0) return res.status(404).json({message: "Invalid credentials"});
       
       const admin = adminResults[0];
       const isMatch = bcrypt.compareSync(password, admin.password);

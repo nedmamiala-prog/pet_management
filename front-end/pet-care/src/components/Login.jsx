@@ -1,41 +1,42 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import "./Login.css";
 import LightRays from "./LightRays";
 import { loginUser, getGoogleAuthUrl } from "../api/authApi";
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [formData, setFormData] = useState({ username: "", password: "" });
+  const [error, setError] = useState(location.state?.error || null);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  if (!formData.username || !formData.password) {
-    alert("Please fill out all fields!");
-    return;
-  }
-
-  try {
-    const result = await loginUser(formData);
-    
-    if (result.message === "Login successful" || result.message === "Admin login successful") {
-    
-      if (result.role === 'admin') {
-        navigate("/Admin");
-      } else {
-        navigate("/UserDashboard");
-      }
-    } else {
-      alert(result.message);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.username || !formData.password) {
+      setError("Please fill out all fields!");
+      return;
     }
-  } catch (error) {
-    alert("Login failed. Please try again.");
-    console.error(error);
-  }
-};
+
+    try {
+      const result = await loginUser(formData);
+      if (result.message === "Login successful" || result.message === "Admin login successful") {
+        setError(null);
+        if (result.role === 'admin') {
+          navigate("/Admin");
+        } else {
+          navigate("/UserDashboard");
+        }
+      } else {
+        setError(result.message || "Login failed. Please try again.");
+      }
+    } catch (error) {
+      setError("Login failed. Please try again.");
+      console.error(error);
+    }
+  };
 
   const handleGoogleLogin = async () => {
     try {
@@ -50,7 +51,7 @@ const handleSubmit = async (e) => {
       window.location.href = authUrl;
     } catch (error) {
       console.error('Google login error:', error);
-      alert(`Google sign-in failed: ${error.message || 'Please check your console for details and try again.'}`);
+      setError(`Google sign-in failed: ${error.message || 'Please check your console for details and try again.'}`);
     }
   };
 
@@ -64,6 +65,21 @@ const handleSubmit = async (e) => {
         <div className="form-wrapper">
           <div className="logo"><span>PetCare</span></div>
           <h2>Welcome Back!</h2>
+
+          {error && (
+            <div
+              style={{
+                marginBottom: '12px',
+                padding: '10px 12px',
+                borderRadius: '6px',
+                backgroundColor: '#fee2e2',
+                color: '#b91c1c',
+                fontSize: '14px',
+              }}
+            >
+              {error}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit}>
             <div className="form-group">

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaClock, FaCheckCircle, FaTimesCircle, FaCalendarCheck, FaArrowLeft, FaSearch } from "react-icons/fa";
-import Sidebar from "./Sidebar"; 
+import Sidebar from "./Sidebar";
 import Header from "./Header";    
 import "./AdminAppointmentPage.css";
 import { AppointmentGetAll, HandleAccept, cancelAppointment } from "../api/appointmentApi";
@@ -21,6 +21,7 @@ export default function AdminAppointmentPage() {
   const [cancelReason, setCancelReason] = useState('');
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [serviceFilter, setServiceFilter] = useState('all');
 
 useEffect(() => {
   async function fetchAllAppointments() {
@@ -75,19 +76,31 @@ useEffect(() => {
 
   const [search, setSearch] = useState("");
 
+  const serviceOptions = useMemo(
+    () => Array.from(new Set(appointments.map((a) => a.service))).filter(Boolean),
+    [appointments]
+  );
+
   const getAvailableTimes = (service) => {
   
     return serviceSlots[service] || [];
   };
 
   const filtered = useMemo(() => {
-    return appointments.filter(a => {
+    const q = search.trim().toLowerCase();
+    return appointments.filter((a) => {
       const tabMatch = a.status === activeTab;
-      if (!search.trim()) return tabMatch;
-      const q = search.trim().toLowerCase();
-      return tabMatch && (a.owner.toLowerCase().includes(q) || a.pet.toLowerCase().includes(q));
+      if (!tabMatch) return false;
+
+      const matchesSearch = !q
+        ? true
+        : a.owner.toLowerCase().includes(q) || a.pet.toLowerCase().includes(q);
+
+      const matchesService = serviceFilter === 'all' || a.service === serviceFilter;
+
+      return matchesSearch && matchesService;
     });
-  }, [appointments, activeTab, search]);
+  }, [appointments, activeTab, search, serviceFilter]);
 
 
   const updateStatus = (id, newStatus) => {
@@ -155,9 +168,7 @@ useEffect(() => {
       <main className="main-container">
         <div className="admin-appointment-wrapper">
           <div className="top-row">
-            <button className="back-btn" onClick={() => navigate(-1)}>
-              <FaArrowLeft /> Back
-            </button>
+            
             <div className="page-title">
               <h3>Pet Care Appointments</h3>
               <h4>Manage your pet clients’ appointments and schedules</h4>
@@ -180,6 +191,27 @@ useEffect(() => {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
+            </div>
+
+            <div style={{ minWidth: '200px' }}>
+              <select
+                value={serviceFilter}
+                onChange={(e) => setServiceFilter(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '8px 10px',
+                  borderRadius: '8px',
+                  border: '1px solid #d1d5db',
+                  fontSize: '14px',
+                }}
+              >
+                <option value="all">All services</option>
+                {serviceOptions.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 

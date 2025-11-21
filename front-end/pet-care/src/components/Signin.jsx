@@ -6,6 +6,7 @@ import { registerUser, getGoogleAuthUrl } from "../api/authApi";
 
 export default function Signin() {
   const navigate = useNavigate();
+  const [error, setError] = useState(null);
 
   const [formData, setFormData] = useState({
     first_name: "",
@@ -29,7 +30,7 @@ export default function Signin() {
     const { first_name, last_name, username, email, phone_number, password } = formData;
 
     if (!first_name || !last_name || !username || !email || !phone_number || !password) {
-      alert("Please fill out all fields!");
+      setError("Please fill out all fields!");
       return;
     }
 
@@ -38,12 +39,13 @@ export default function Signin() {
 
       if (result.message === "Registration successful") {
         console.log("Registration successful:", formData);
+        setError(null);
         navigate("/UserDashboard"); 
       } else {
-        alert(result.message);
+        setError(result.message || "Registration failed. Please try again.");
       }
     } catch (error) {
-      alert("Registration failed. Please try again.");
+      setError("Registration failed. Please try again.");
     }
   };
 
@@ -60,7 +62,7 @@ export default function Signin() {
       window.location.href = authUrl;
     } catch (error) {
       console.error('Google signup error:', error);
-      alert(`Google sign-up failed: ${error.message || 'Please check your console for details and try again.'}`);
+      setError(`Google sign-up failed: ${error.message || 'Please check your console for details and try again.'}`);
     }
   };
 
@@ -80,6 +82,21 @@ export default function Signin() {
           </div>
 
           <h2>Create an Account</h2>
+
+          {error && (
+            <div
+              style={{
+                marginBottom: '12px',
+                padding: '10px 12px',
+                borderRadius: '6px',
+                backgroundColor: '#fee2e2',
+                color: '#b91c1c',
+                fontSize: '14px',
+              }}
+            >
+              {error}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit}>
             {}
@@ -169,7 +186,7 @@ export default function Signin() {
           </form>
 
           <div className="divider" style={{ margin: '20px 0', textAlign: 'center', position: 'relative' }}>
-            <span style={{ background: '#fff', padding: '0 15px', color: '#999' }}>OR</span>
+            <span style={{  padding: '0 15px', color: 'white' }}>OR</span>
           </div>
 
           <button 

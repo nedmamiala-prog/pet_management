@@ -8,6 +8,7 @@ function AppointmentSection() {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState(null);
+  const [notification, setNotification] = useState(null);
 
   const handleTabClick = (tab) => {
     setActiveTab(tab);
@@ -39,7 +40,10 @@ function AppointmentSection() {
     setCancellingId(null);
 
     if (!response.success) {
-      alert(response.message || 'Unable to cancel appointment right now.');
+      setNotification({
+        title: 'Cancellation failed',
+        message: response.message || 'Unable to cancel appointment right now.',
+      });
       return;
     }
 
@@ -136,6 +140,52 @@ function AppointmentSection() {
           </table>
         )}
       </div>
+
+      {notification && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15,23,42,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2000,
+          }}
+        >
+          <div
+            style={{
+              width: '360px',
+              maxWidth: '90%',
+              background: '#fff',
+              borderRadius: '16px',
+              boxShadow: '0 20px 60px rgba(15,23,42,0.2)',
+              padding: '20px',
+            }}
+          >
+            <h3 style={{ marginBottom: '8px', color: '#111827' }}>{notification.title}</h3>
+            <p style={{ marginBottom: '16px', color: '#4b5563', fontSize: '14px' }}>
+              {notification.message}
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setNotification(null)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  border: '1px solid #d1d5db',
+                  background: '#fff',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

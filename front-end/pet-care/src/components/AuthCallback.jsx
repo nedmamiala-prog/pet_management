@@ -39,9 +39,8 @@ export default function AuthCallback() {
       }
     } else {
  
-      alert('Authentication failed. Please try again.');
       logoutUser();
-      navigate('/login');
+      navigate('/login', { state: { error: 'Authentication failed. Please try again.' } });
     }
   }, [navigate, searchParams]);
 

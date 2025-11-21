@@ -1,8 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { PawPrint, Users, Clock, DollarSign } from 'lucide-react';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import { fetchAnalyticsOverview } from '../api/analyticsApi';
 import './AnalyticsDashboard.css';
 
 const metricTemplates = [
@@ -81,20 +82,66 @@ const AnalyticsDashboard = () => {
   // TODO (Backend Integration): replace SAMPLE_* data with a fetch call to /analytics/overview
   // and map the response into the shape expected by buildMetricsFromData / chartData.
   const [activeRange, setActiveRange] = useState(RANGE_FILTERS[0]);
-  const metrics = useMemo(() => buildMetricsFromData(), []);
-  const chartData = SAMPLE_CHART_DATA;
+  const [metricsData, setMetricsData] = useState(null);
+  const [statusData, setStatusData] = useState(null);
+  const [serviceData, setServiceData] = useState(null);
+  const [trendData, setTrendData] = useState(null);
+  const [serviceSales, setServiceSales] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadAnalytics = async () => {
+      try {
+        const result = await fetchAnalyticsOverview();
+        if (!isMounted) return;
+
+        if (result.success && result.data) {
+          setMetricsData(result.data.metrics || null);
+          setStatusData(result.data.statusBreakdown || null);
+          setServiceData(result.data.servicePerformance || null);
+          setTrendData(result.data.appointmentTrend || null);
+          setServiceSales(result.data.serviceSales || null);
+          setError(null);
+        } else {
+          setError(result.message || 'Analytics data unavailable');
+        }
+      } catch (err) {
+        if (!isMounted) return;
+        setError(err.message || 'Analytics data unavailable');
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadAnalytics();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const metrics = useMemo(() => buildMetricsFromData(metricsData || {}), [metricsData]);
+  const chartData = trendData && trendData.length ? trendData : SAMPLE_CHART_DATA;
   const maxValue = Math.max(...chartData.flatMap((d) => [d.current, d.previous]));
   const chartHeight = 260;
   const chartWidth = 640;
   const chartPadding = 30;
 
   const buildLinePoints = (key) => {
-    const step = (chartWidth - chartPadding * 2) / (chartData.length - 1);
+    const step = (chartWidth - chartPadding * 2) / (chartData.length - 1 || 1);
+    const scaleMax = maxValue > 0 ? maxValue : 1;
     return chartData
       .map((point, index) => {
         const x = chartPadding + step * index;
         const y =
-          chartHeight - chartPadding - (point[key] / maxValue) * (chartHeight - chartPadding * 2);
+          chartHeight -
+          chartPadding -
+          (point[key] / scaleMax) * (chartHeight - chartPadding * 2);
         return `${x},${y}`;
       })
       .join(' ');
@@ -108,11 +155,14 @@ const AnalyticsDashboard = () => {
     const increment = Math.ceil(maxValue / tickCount);
     return Array.from({ length: tickCount + 1 }, (_, index) => increment * index);
   }, [maxValue]);
+  const statusBreakdown = statusData && statusData.length ? statusData : SAMPLE_STATUS_BREAKDOWN;
   const statusTotal = useMemo(
-    () => SAMPLE_STATUS_BREAKDOWN.reduce((sum, status) => sum + status.value, 0),
-    [],
+    () => statusBreakdown.reduce((sum, status) => sum + status.value, 0),
+    [statusBreakdown],
   );
-  const statusMessage = 'Showing sample analytics data (replace with backend fetch when ready).';
+  const statusMessage = metricsData || statusData || serviceData
+    ? 'Showing live analytics based on recent appointments and billing.'
+    : 'Showing sample analytics data (live analytics unavailable).';
 
   const metricCards = useMemo(
     () =>
@@ -141,9 +191,7 @@ const AnalyticsDashboard = () => {
       <main className="main-container analytics-main">
         <section className="analytics-dashboard">
           <div className="dashboard-header">
-            <Link to="/Admin" className="back-link">
-              ← Back to Admin
-            </Link>
+         
             <h1>PetCare Analytics</h1>
             <p>Appointment Statistics Overview</p>
             <span className="status-badge ready">{statusMessage}</span>
@@ -261,7 +309,7 @@ const AnalyticsDashboard = () => {
                 <span className="status-total">{statusTotal} total</span>
               </div>
               <ul className="status-list">
-                {SAMPLE_STATUS_BREAKDOWN.map((status) => {
+                {statusBreakdown.map((status) => {
                   const percentage = Math.round((status.value / statusTotal) * 100);
                   return (
                     <li key={status.label} className="status-row">
@@ -289,24 +337,36 @@ const AnalyticsDashboard = () => {
           </div>
 
           <div className="service-grid">
-            {SAMPLE_SERVICE_PERFORMANCE.map((service) => (
-              <div key={service.name} className="service-card">
-                <div className="service-header">
-                  <h3>{service.name}</h3>
-                  <span className={`trend ${service.trend >= 0 ? 'up' : 'down'}`}>
-                    {service.trend >= 0 ? '+' : ''}
-                    {service.trend}%
-                  </span>
+            {(serviceData && serviceData.length ? serviceData : SAMPLE_SERVICE_PERFORMANCE).map((service) => {
+              const salesEntry =
+                serviceSales && Array.isArray(serviceSales)
+                  ? serviceSales.find((s) => s.name === service.name)
+                  : null;
+              const salesAmount = salesEntry ? salesEntry.totalSales : null;
+              return (
+                <div key={service.name} className="service-card">
+                  <div className="service-header">
+                    <h3>{service.name}</h3>
+                    <span className={`trend ${service.trend >= 0 ? 'up' : 'down'}`}>
+                      {service.trend >= 0 ? '+' : ''}
+                      {service.trend}%
+                    </span>
+                  </div>
+                  <p className="service-volume">{service.volume} visits</p>
+                  <div className="service-bar">
+                    <span style={{ width: `${service.fill}%` }} />
+                  </div>
+                  <small>
+                    Avg rating {service.rating} · {service.duration} min avg duration
+                  </small>
+                  {salesAmount !== null && (
+                    <small>
+                      Sales: ${salesAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </small>
+                  )}
                 </div>
-                <p className="service-volume">{service.volume} visits</p>
-                <div className="service-bar">
-                  <span style={{ width: `${service.fill}%` }} />
-                </div>
-                <small>
-                  Avg rating {service.rating} · {service.duration} min avg duration
-                </small>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       </main>

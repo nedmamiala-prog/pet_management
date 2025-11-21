@@ -19,6 +19,9 @@ function BillingSection() {
   const [loading, setLoading] = useState(true);
   const [payingId, setPayingId] = useState(null);
   const [error, setError] = useState('');
+  const [notification, setNotification] = useState(null);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
     async function fetchBilling() {
@@ -63,6 +66,28 @@ function BillingSection() {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
+  const filteredBills = bills.filter((bill) => {
+    const matchesStatus = statusFilter === 'all' ? true : bill.status === statusFilter;
+    if (!matchesStatus) return false;
+
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+
+    const invoice = String(bill.billing_id || '').toLowerCase();
+    const amount = String(bill.amount || '').toLowerCase();
+    const status = String(bill.status || '').toLowerCase();
+    const due = bill.due_date
+      ? new Date(bill.due_date).toLocaleString().toLowerCase()
+      : '';
+
+    return (
+      invoice.includes(q) ||
+      amount.includes(q) ||
+      status.includes(q) ||
+      due.includes(q)
+    );
+  });
+
   const handlePay = async (billing) => {
 
     setPayingId(billing.billing_id);
@@ -74,7 +99,10 @@ function BillingSection() {
       });
       const json = await res.json();
       if (!res.ok) {
-        alert(json.error || 'Failed to create PayPal order');
+        setNotification({
+          title: 'Payment error',
+          message: json.error || 'Failed to create PayPal order',
+        });
         setPayingId(null);
         return;
       }
@@ -90,12 +118,16 @@ function BillingSection() {
   
       window.open(json.approvalUrl, '_blank');
 
-   
-
-      alert('PayPal checkout opened. Complete payment in the new window. Refresh to see status.');
+      setNotification({
+        title: 'PayPal checkout opened',
+        message: 'Complete payment in the new window, then refresh to see updated status.',
+      });
     } catch (err) {
       console.error(err);
-      alert('Network error starting PayPal checkout: ' + err.message);
+      setNotification({
+        title: 'Network error',
+        message: 'Network error starting PayPal checkout: ' + err.message,
+      });
     } finally {
       setPayingId(null);
     }
@@ -108,12 +140,33 @@ function BillingSection() {
         Billing & Payments
       </div>
 
+      <div className="billing-controls">
+        <div className="billing-search">
+          <input
+            type="text"
+            placeholder="Search invoice, amount, status or date..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+        >
+          <option value="all">All statuses</option>
+          <option value="pending">Pending</option>
+          <option value="overdue">Overdue</option>
+          <option value="paid">Paid</option>
+          <option value="void">Void</option>
+        </select>
+      </div>
+
       <div className="billing-table">
         {loading ? (
           <p style={{ padding: '20px' }}>Loading billing records...</p>
         ) : error ? (
           <p style={{ padding: '20px', color: '#b91c1c' }}>{error}</p>
-        ) : bills.length === 0 ? (
+        ) : filteredBills.length === 0 ? (
           <p style={{ padding: '20px', color: '#64748b' }}>No billing records yet.</p>
         ) : (
           <table>
@@ -127,7 +180,7 @@ function BillingSection() {
               </tr>
             </thead>
             <tbody>
-              {bills.map((bill) => (
+              {filteredBills.map((bill) => (
                 <tr key={bill.billing_id}>
                   <td>#{bill.billing_id}</td>
                   <td>₱{Number(bill.amount || 0).toFixed(2)}</td>
@@ -174,6 +227,52 @@ function BillingSection() {
           </table>
         )}
       </div>
+
+      {notification && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15,23,42,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2000,
+          }}
+        >
+          <div
+            style={{
+              width: '360px',
+              maxWidth: '90%',
+              background: '#fff',
+              borderRadius: '16px',
+              boxShadow: '0 20px 60px rgba(15,23,42,0.2)',
+              padding: '20px',
+            }}
+          >
+            <h3 style={{ marginBottom: '8px', color: '#111827' }}>{notification.title}</h3>
+            <p style={{ marginBottom: '16px', color: '#4b5563', fontSize: '14px' }}>
+              {notification.message}
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setNotification(null)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  border: '1px solid #d1d5db',
+                  background: '#fff',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
