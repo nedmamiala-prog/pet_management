@@ -10,19 +10,18 @@ import { UserPet } from "../api/appointmentApi";
 export default function Appointment({ closeModal }) {
   const [step, setStep] = useState(1);
   const [hasPet, setHasPet] = useState(false);
-  const [petId, setPetId] = useState(null);
+  const [selectedPetIds, setSelectedPetIds] = useState([]); // Multiple pets
   const [pets, setPets] = useState([]); 
+  const [newPets, setNewPets] = useState([]); // New pets to be created
 
   const [petData, setPetData] = useState({
     pet_name: "",
+    birthdate: "",
+    species: "",
     breed: "",
-    age: "",
     gender: "",
     medical_history: "",
   });
-
-
-
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -31,9 +30,10 @@ export default function Appointment({ closeModal }) {
     phone: "",
     notes: "",
     date: "",
-  time: "", 
-  services: [], 
   });
+
+  // Structure: { petId: { services: [], times: {} } }
+  const [petServices, setPetServices] = useState({});
 
   const [services, setServices] = useState([]);
   const [availableSlots, setAvailableSlots] = useState({}); 
@@ -85,9 +85,15 @@ useEffect(() => {
 }, []);
 
 
+  // Fetch available slots for all selected services across all pets
   useEffect(() => {
-    if (formData.services.length > 0 && formData.date) {
-      formData.services.forEach(serviceName => {
+    if (formData.date) {
+      const allServices = new Set();
+      Object.values(petServices).forEach(petData => {
+        petData.services?.forEach(service => allServices.add(service));
+      });
+
+      allServices.forEach(serviceName => {
         setLoadingSlots(prev => ({ ...prev, [serviceName]: true }));
         
         getAvailableSlots(serviceName, formData.date)
@@ -95,12 +101,6 @@ useEffect(() => {
             if (response.success) {
               const slots = response.availableSlots || [];
               setAvailableSlots(prev => ({ ...prev, [serviceName]: slots }));
-              
-            
-              const currentTime = formData[`time-${serviceName}`];
-              if (currentTime && !slots.includes(currentTime)) {
-                setFormData((prev) => ({ ...prev, [`time-${serviceName}`]: "" }));
-              }
               
               if (slots.length === 0) {
                 console.warn(`No available slots for ${serviceName} on ${formData.date}`);
@@ -122,7 +122,7 @@ useEffect(() => {
       setAvailableSlots({});
       setLoadingSlots({});
     }
-  }, [formData.services, formData.date]);
+  }, [petServices, formData.date]);
 
 
 
@@ -131,7 +131,19 @@ useEffect(() => {
     const { name, value } = e.target;
     if (step === 1) {
       if (hasPet && name === "petSelect") {
-        setPetId(value);
+        // Handle multiple pet selection
+        const petIdNum = parseInt(value);
+        if (e.target.checked) {
+          setSelectedPetIds(prev => [...prev, petIdNum]);
+        } else {
+          setSelectedPetIds(prev => prev.filter(id => id !== petIdNum));
+          // Remove services for deselected pet
+          setPetServices(prev => {
+            const newState = { ...prev };
+            delete newState[petIdNum];
+            return newState;
+          });
+        }
       } else {
         setPetData({ ...petData, [name]: value });
       }
@@ -140,15 +152,82 @@ useEffect(() => {
     }
   };
 
+  const handleAddNewPet = () => {
+    const newPet = { ...petData, tempId: Date.now() };
+    setNewPets(prev => [...prev, newPet]);
+    setPetData({
+      pet_name: "",
+      birthdate: "",
+      species: "",
+      breed: "",
+      gender: "",
+      medical_history: "",
+    });
+  };
+
+  const handleRemoveNewPet = (tempId) => {
+    setNewPets(prev => prev.filter(p => p.tempId !== tempId));
+    setPetServices(prev => {
+      const newState = { ...prev };
+      delete newState[`new-${tempId}`];
+      return newState;
+    });
+  };
+
+  const handlePetServiceToggle = (petId, serviceName) => {
+    setPetServices(prev => {
+      const petData = prev[petId] || { services: [], times: {} };
+      const services = [...petData.services];
+      const times = { ...petData.times };
+      
+      if (services.includes(serviceName)) {
+        // Remove service
+        const index = services.indexOf(serviceName);
+        services.splice(index, 1);
+        delete times[serviceName];
+      } else {
+        // Add service
+        services.push(serviceName);
+      }
+      
+      return {
+        ...prev,
+        [petId]: { services, times }
+      };
+    });
+  };
+
+  const handlePetServiceTimeChange = (petId, serviceName, time) => {
+    setPetServices(prev => {
+      const petData = prev[petId] || { services: [], times: {} };
+      return {
+        ...prev,
+        [petId]: {
+          ...petData,
+          times: { ...petData.times, [serviceName]: time }
+        }
+      };
+    });
+  };
+
 
   const handleNext = () => setStep((prev) => Math.min(prev + 1, 4));
   const prevStep = () => setStep((prev) => Math.max(prev - 1, 1));
 
   const findServiceByName = (serviceName) => services.find((s) => s.service_name === serviceName);
-  const totalCost = formData.services.reduce((sum, serviceName) => {
-    const info = findServiceByName(serviceName);
-    return sum + (Number(info?.price) || 0);
-  }, 0);
+  
+  const calculateTotalCost = () => {
+    let total = 0;
+    Object.values(petServices).forEach(petData => {
+      petData.services?.forEach(serviceName => {
+        const info = findServiceByName(serviceName);
+        total += (Number(info?.price) || 0);
+      });
+    });
+    return total;
+  };
+
+  const totalCost = calculateTotalCost();
 
   const formatCurrency = (value) => `₱${Number(value || 0).toFixed(2)}`;
 
@@ -171,72 +250,145 @@ useEffect(() => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
- 
-    const servicesWithTimes = formData.services.filter(serviceName => {
-      return formData[`time-${serviceName}`];
-    });
+    // Validate that we have at least one pet selected
+    const allPetIds = [...selectedPetIds, ...newPets.map(p => `new-${p.tempId}`)];
+    if (allPetIds.length === 0) {
+      setNotification({
+        title: 'No pets selected',
+        message: 'Please select or add at least one pet.',
+      });
+      return;
+    }
+
+    // Validate that all pets have at least one service with time
+    let hasError = false;
+    let errorMessage = '';
+
+    for (const petId of allPetIds) {
+      const petData = petServices[petId];
+      if (!petData || !petData.services || petData.services.length === 0) {
+        hasError = true;
+        errorMessage = 'Each pet must have at least one service selected.';
+        break;
+      }
+
+      // Check that all services have times
+      const missingTimes = petData.services.filter(service => !petData.times[service]);
+      if (missingTimes.length > 0) {
+        hasError = true;
+        errorMessage = `Please select a time for all services for each pet.`;
+        break;
+      }
+    }
 
     if (
-      formData.firstName &&
-      formData.lastName &&
-      formData.email &&
-      formData.phone &&
-      formData.date &&
-      formData.services.length > 0 &&
-      servicesWithTimes.length === formData.services.length
+      !formData.firstName ||
+      !formData.lastName ||
+      !formData.email ||
+      !formData.phone ||
+      !formData.date
     ) {
-      try {
-        let finalPetId = petId;
+      hasError = true;
+      errorMessage = 'Please complete all required fields.';
+    }
 
-        if (!hasPet) {
-          const petResponse = await addPet(petData);
-          if (!petResponse.success) throw new Error(petResponse.message);
-          finalPetId = petResponse.pet?.pet_id;
-        }
+    if (hasError) {
+      setNotification({
+        title: 'Incomplete details',
+        message: errorMessage,
+      });
+      return;
+    }
 
-   
-        const appointmentPromises = formData.services.map(async (serviceName) => {
-          const time = formData[`time-${serviceName}`];
-          
-          const result = await createAppointment({
-            pet_id: finalPetId,
-            date: formData.date,
-            time: time,
-            service: serviceName,
-            notes: formData.notes
-          });
-          
-          if (!result.success) {
-            throw new Error(`Failed to create appointment for ${serviceName}: ${result.message || 'Unknown error'}`);
+    try {
+      const appointmentPromises = [];
+
+      // Create appointments for existing pets
+      for (const petId of selectedPetIds) {
+        const petData = petServices[petId];
+        if (petData && petData.services) {
+          for (const serviceName of petData.services) {
+            const time = petData.times[serviceName];
+            appointmentPromises.push(
+              createAppointment({
+                pet_id: petId,
+                date: formData.date,
+                time: time,
+                service: serviceName,
+                notes: formData.notes
+              })
+            );
           }
-          
-          return result;
-        });
+        }
+      }
 
-        const results = await Promise.all(appointmentPromises);
-        console.log('Appointments created:', results);
-     
-     
-      } catch (err) {
-        console.error('Appointment creation error:', err);
-        const errorMessage = err.message || "Error submitting appointments. Try again.";
-        setNotification({
-          title: 'Booking failed',
-          message: errorMessage,
-        });
+      // Create new pets and their appointments
+      for (const newPet of newPets) {
+        const petIdKey = `new-${newPet.tempId}`;
+        const petData = petServices[petIdKey];
+        
+        // Create the pet first
+        const petResponse = await addPet(newPet);
+        if (!petResponse.success) {
+          throw new Error(`Failed to create pet ${newPet.pet_name}: ${petResponse.message}`);
+        }
+        
+        const createdPetId = petResponse.pet?.pet_id;
+        
+        // Create appointments for this new pet
+        if (petData && petData.services) {
+          for (const serviceName of petData.services) {
+            const time = petData.times[serviceName];
+            appointmentPromises.push(
+              createAppointment({
+                pet_id: createdPetId,
+                date: formData.date,
+                time: time,
+                service: serviceName,
+                notes: formData.notes
+              })
+            );
+          }
+        }
       }
-    } else {
-      if (servicesWithTimes.length < formData.services.length) {
-        setNotification({
-          title: 'Missing time selection',
-          message: 'Please select a time for all selected services.',
-        });
-      } else {
-        setNotification({
-          title: 'Incomplete details',
-          message: 'Please complete all required fields.',
-        });
+
+      const results = await Promise.all(appointmentPromises);
+      const failed = results.filter(r => !r.success);
+      
+      if (failed.length > 0) {
+        throw new Error(`Failed to create ${failed.length} appointment(s).`);
       }
+
+      console.log('Appointments created:', results);
+      setNotification({
+        title: 'Success!',
+        message: `Successfully created ${results.length} appointment(s).`,
+      });
+      
+      // Reset form after successful submission
+      setStep(1);
+      setSelectedPetIds([]);
+      setNewPets([]);
+      setPetServices({});
+      setFormData(prev => ({
+        ...prev,
+        date: '',
+        notes: ''
+      }));
+      
+      // Close modal after a delay (only if closeModal is provided)
+      if (closeModal) {
+        setTimeout(() => {
+          closeModal();
+        }, 3000);
+      }
+    } catch (err) {
+      console.error('Appointment creation error:', err);
+      const errorMessage = err.message || "Error submitting appointments. Try again.";
+      setNotification({
+        title: 'Booking failed',
+        message: errorMessage,
+      });
     }
   };
 
@@ -267,7 +419,22 @@ useEffect(() => {
         </div>
 
  
-        <form className="form-panel" onSubmit={handleSubmit}>
+        <form className="form-panel" onSubmit={(e) => {
+          e.preventDefault();
+          // Only submit if we're on step 4 and the submit button was clicked
+          if (step === 4) {
+            handleSubmit(e);
+          }
+        }} onKeyDown={(e) => {
+          // Prevent form submission on Enter key except for submit button
+          if (e.key === 'Enter' && e.target.type !== 'textarea' && e.target.type !== 'submit' && e.target.type !== 'button') {
+            e.preventDefault();
+            // Move to next step if not on last step
+            if (step < 4) {
+              handleNext();
+            }
+          }
+        }}>
        
           {step === 1 && (
             <>
@@ -276,85 +443,144 @@ useEffect(() => {
                 <input
                   type="checkbox"
                   checked={hasPet}
-                  onChange={() => setHasPet(!hasPet)}
+                  onChange={() => {
+                    setHasPet(!hasPet);
+                    if (!hasPet) {
+                      setSelectedPetIds([]);
+                      setPetServices({});
+                    }
+                  }}
                 />
-                <h4>I already have a pet on file</h4>
+                <h4>I already have pets on file</h4>
               </label>
 
-              {hasPet ? (
+              {hasPet && pets.length > 0 && (
                 <>
-                  <label>Select your pet:</label>
-                  <select
-                    name="petSelect"
-                    value={petId || ""}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="">-- Choose your pet --</option>
-                      {pets.map((pet) => (
-                      <option key={pet.pet_id} value={pet.pet_id}>
-                        {pet.pet_name}
-                      </option>
+                  <label>Select your pets (you can select multiple):</label>
+                  <div style={{ border: '1px solid #ddd', borderRadius: '4px', padding: '10px', maxHeight: '200px', overflowY: 'auto' }}>
+                    {pets.map((pet) => (
+                      <label key={pet.pet_id} style={{ display: 'block', marginBottom: '10px', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          name="petSelect"
+                          value={pet.pet_id}
+                          checked={selectedPetIds.includes(pet.pet_id)}
+                          onChange={handleChange}
+                        />
+                        <span style={{ marginLeft: '8px' }}>
+                          <strong>{pet.pet_name}</strong> - {pet.species || 'Unknown'} ({pet.breed || 'Unknown'})
+                        </span>
+                      </label>
                     ))}
-                  </select>
-
-                  {petId && (
-                    <div className="pet-preview">
-                      <p>
-                        🐾 <strong>{pets.find((p) => p.pet_id == petId)?.pet_name}</strong>
-                      </p>
-                      <p>Breed: {pets.find((p) => p.pet_id == petId)?.breed}</p>
-                      <p>Age: {pets.find((p) => p.pet_id == petId)?.age}</p>
-                      <p>Gender: {pets.find((p) => p.pet_id == petId)?.gender}</p>
+                  </div>
+                  
+                  {selectedPetIds.length > 0 && (
+                    <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#f0f8ff', borderRadius: '4px' }}>
+                      <strong>Selected Pets ({selectedPetIds.length}):</strong>
+                      {selectedPetIds.map(id => {
+                        const pet = pets.find(p => p.pet_id === id);
+                        return pet ? (
+                          <div key={id} style={{ marginTop: '5px' }}>
+                            🐾 {pet.pet_name} - {pet.species || 'Unknown'}
+                          </div>
+                        ) : null;
+                      })}
                     </div>
                   )}
                 </>
-              ) : (
-                <>
-                  <div className="input-group">
-                    <input
-                      type="text"
-                      name="pet_name"
-                      placeholder="Pet name"
-                      value={petData.pet_name}
-                      onChange={handleChange}
-                      required
-                    />
-                    <input
-                      type="text"
-                      name="breed"
-                      placeholder="Breed"
-                      value={petData.breed}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
+              )}
+
+              {/* Add new pets section */}
+              <div style={{ marginTop: '20px', borderTop: '1px solid #ddd', paddingTop: '20px' }}>
+                <h4>Add New Pet(s):</h4>
+                <div className="input-group">
                   <input
                     type="text"
-                    name="age"
-                    placeholder="Age"
-                    value={petData.age}
+                    name="pet_name"
+                    placeholder="Pet name"
+                    value={petData.pet_name}
                     onChange={handleChange}
-                    required
                   />
                   <select
-                    name="gender"
-                    value={petData.gender}
+                    name="species"
+                    value={petData.species}
                     onChange={handleChange}
-                    required
                   >
-                    <option value="">Select Gender</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
+                    <option value="">Select Species</option>
+                    <option value="Dog">Dog</option>
+                    <option value="Cat">Cat</option>
+                    <option value="Bird">Bird</option>
+                    <option value="Rabbit">Rabbit</option>
+                    <option value="Other">Other</option>
                   </select>
+                </div>
+                <div className="input-group">
                   <input
                     type="text"
-                    name="medical_history"
-                    placeholder="Medical history (optional)"
-                    value={petData.medical_history}
+                    name="breed"
+                    placeholder="Breed"
+                    value={petData.breed}
                     onChange={handleChange}
                   />
-                </>
+                  <input
+                    type="date"
+                    name="birthdate"
+                    placeholder="Birthdate"
+                    value={petData.birthdate}
+                    onChange={handleChange}
+                    max={new Date().toISOString().split("T")[0]}
+                  />
+                </div>
+                <select
+                  name="gender"
+                  value={petData.gender}
+                  onChange={handleChange}
+                  style={{ width: '100%', marginBottom: '10px' }}
+                >
+                  <option value="">Select Gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                </select>
+                <input
+                  type="text"
+                  name="medical_history"
+                  placeholder="Medical history (optional)"
+                  value={petData.medical_history}
+                  onChange={handleChange}
+                  style={{ width: '100%', marginBottom: '10px' }}
+                />
+                <button
+                  type="button"
+                  onClick={handleAddNewPet}
+                  disabled={!petData.pet_name || !petData.species || !petData.breed || !petData.birthdate || !petData.gender}
+                  style={{ padding: '8px 16px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                >
+                  Add Pet to List
+                </button>
+              </div>
+
+              {newPets.length > 0 && (
+                <div style={{ marginTop: '15px', padding: '10px', backgroundColor: '#fff3cd', borderRadius: '4px' }}>
+                  <strong>New Pets to be Added ({newPets.length}):</strong>
+                  {newPets.map((pet, idx) => (
+                    <div key={pet.tempId} style={{ marginTop: '5px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>🐾 {pet.pet_name} - {pet.species}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveNewPet(pet.tempId)}
+                        style={{ padding: '4px 8px', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {(selectedPetIds.length > 0 || newPets.length > 0) && (
+                <div style={{ marginTop: '15px', padding: '10px', backgroundColor: '#d4edda', borderRadius: '4px' }}>
+                  <strong>Total Pets Selected: {selectedPetIds.length + newPets.length}</strong>
+                </div>
               )}
             </>
           )}
@@ -411,100 +637,168 @@ useEffect(() => {
       
       {step === 3 && (
   <>
-   
-    <h3>Select Pet Care Service:</h3>
-    <div style={{ border: '1px solid #ccc', borderRadius: '4px', maxHeight: '200px', overflowY: 'auto', padding: '8px', backgroundColor: '#fff' }}>
-      {services.map((service) => (
-        <label key={service.service_id}  onMouseEnter={(e) => { if (!formData.services.includes(service.service_name)) e.currentTarget.style.backgroundColor = '#f8fafc'; }} onMouseLeave={(e) => { if (!formData.services.includes(service.service_name)) e.currentTarget.style.backgroundColor = 'transparent'; }}>
-          <input
-            type="checkbox"
-            value={service.service_name}
-            checked={formData.services.includes(service.service_name)}
-            onChange={(e) => {
-              const serviceName = e.target.value;
-              const selected = [...formData.services];
-              if (e.target.checked) {
-                selected.push(serviceName);
-              } else {
-                const index = selected.indexOf(serviceName);
-                if (index > -1) {
-                  selected.splice(index, 1);
-               
-                  setFormData(prev => {
-                    const newData = { ...prev };
-                    delete newData[`time-${serviceName}`];
-                    return newData;
-                  });
-                
-                  setAvailableSlots(prev => {
-                    const newSlots = { ...prev };
-                    delete newSlots[serviceName];
-                    return newSlots;
-                  });
-                  setLoadingSlots(prev => {
-                    const newLoading = { ...prev };
-                    delete newLoading[serviceName];
-                    return newLoading;
-                  });
-                }
-              }
-              setFormData(prev => ({ ...prev, services: selected }));
-            }}
-            style={{ marginRight: '10px', flexShrink: 0, cursor: 'pointer' }}
-          />
-          <span style={{ fontSize: '14px' }}>{service.service_name} ({service.duration_minutes} min) — {formatCurrency(service.price)}</span>
-        </label>
-      ))}
-    </div>
+    <h3>Select Date and Services for Each Pet:</h3>
     
+    <input
+      type="date"
+      name="date"
+      value={formData.date}
+      onChange={handleChange}
+      required
+      min={new Date().toISOString().split("T")[0]}
+      style={{ width: '100%', marginBottom: '20px', padding: '8px' }}
+    />
 
-    {formData.services.length > 0 && (
-      <>
-        <input
-          type="date"
-          name="date"
-          value={formData.date}
-          onChange={handleChange}
-          required
-          min={new Date().toISOString().split("T")[0]}
-        />
+    {/* Services for existing pets */}
+    {selectedPetIds.map(petId => {
+      const pet = pets.find(p => p.pet_id === petId);
+      if (!pet) return null;
+      
+      const petData = petServices[petId] || { services: [], times: {} };
+      
+      return (
+        <div key={petId} style={{ marginBottom: '20px', padding: '15px', border: '2px solid #4CAF50', borderRadius: '8px', backgroundColor: '#f9f9f9' }}>
+          <h4 style={{ marginBottom: '10px', color: '#4CAF50' }}>
+            🐾 {pet.pet_name} ({pet.species || 'Unknown'})
+          </h4>
+          
+          <div style={{ border: '1px solid #ccc', borderRadius: '4px', maxHeight: '150px', overflowY: 'auto', padding: '8px', backgroundColor: '#fff', marginBottom: '10px' }}>
+            {services.map((service) => {
+              const isSelected = petData.services?.includes(service.service_name);
+              return (
+                <label key={service.service_id} style={{ display: 'block', marginBottom: '8px', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={isSelected || false}
+                    onChange={() => handlePetServiceToggle(petId, service.service_name)}
+                    style={{ marginRight: '8px' }}
+                  />
+                  <span style={{ fontSize: '14px' }}>
+                    {service.service_name} ({service.duration_minutes} min) — {formatCurrency(service.price)}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
 
-        {formData.services.map(serviceName => {
-          const serviceInfo = services.find(s => s.service_name === serviceName);
-          return (
-            <div key={serviceName} style={{ marginBottom: '10px', padding: '2px', border: '1px solid #ddd', borderRadius: '2px' }}>
-              <h4 style={{fontSize: "10px"}}>
-                {serviceName} ({serviceInfo?.duration_minutes || 30} min) — {formatCurrency(serviceInfo?.price)}
-              </h4>
-              {loadingSlots[serviceName] ? (
-                <p>Loading available slots...</p>
-              ) : availableSlots[serviceName] && availableSlots[serviceName].length > 0 ? (
-                <select
-                  name={`time-${serviceName}`}
-                  value={formData[`time-${serviceName}`] || ""}
-                  onChange={handleChange}
-                  required
-                  style={{ fontSize: "12px"}}
-                >
-                  <option value="">-- Select Time --</option>
-                  {availableSlots[serviceName].map(slot => (
-                    <option key={slot} value={slot}>
-                      {formatTimeSlot(slot)}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <p style={{ color: "#ff6b6b", fontSize: "10px"}}>
-                  No available slots for this service on the selected date.
-                </p>
-              )}
+          {/* Time selection for selected services */}
+          {petData.services && petData.services.length > 0 && (
+            <div style={{ marginTop: '10px' }}>
+              <strong>Select times for {pet.pet_name}:</strong>
+              {petData.services.map(serviceName => {
+                const serviceInfo = services.find(s => s.service_name === serviceName);
+                return (
+                  <div key={serviceName} style={{ marginTop: '8px', padding: '8px', border: '1px solid #ddd', borderRadius: '4px', backgroundColor: '#fff' }}>
+                    <div style={{ fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}>
+                      {serviceName} ({serviceInfo?.duration_minutes || 30} min) — {formatCurrency(serviceInfo?.price)}
+                    </div>
+                    {loadingSlots[serviceName] ? (
+                      <p style={{ fontSize: '12px' }}>Loading available slots...</p>
+                    ) : availableSlots[serviceName] && availableSlots[serviceName].length > 0 ? (
+                      <select
+                        value={petData.times[serviceName] || ""}
+                        onChange={(e) => handlePetServiceTimeChange(petId, serviceName, e.target.value)}
+                        required
+                        style={{ width: '100%', fontSize: "12px", padding: '4px' }}
+                      >
+                        <option value="">-- Select Time --</option>
+                        {availableSlots[serviceName].map(slot => (
+                          <option key={slot} value={slot}>
+                            {formatTimeSlot(slot)}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <p style={{ color: "#ff6b6b", fontSize: "12px"}}>
+                        No available slots for this service on the selected date.
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-          );
-        })}
-        <p style={{ fontWeight: 600, marginTop: '10px', fontSize: '12px' }}>
+          )}
+        </div>
+      );
+    })}
+
+    {/* Services for new pets */}
+    {newPets.map(newPet => {
+      const petIdKey = `new-${newPet.tempId}`;
+      const petData = petServices[petIdKey] || { services: [], times: {} };
+      
+      return (
+        <div key={newPet.tempId} style={{ marginBottom: '20px', padding: '15px', border: '2px solid #FF9800', borderRadius: '8px', backgroundColor: '#fff8e1' }}>
+          <h4 style={{ marginBottom: '10px', color: '#FF9800' }}>
+            🐾 {newPet.pet_name} ({newPet.species || 'Unknown'}) - New Pet
+          </h4>
+          
+          <div style={{ border: '1px solid #ccc', borderRadius: '4px', maxHeight: '150px', overflowY: 'auto', padding: '8px', backgroundColor: '#fff', marginBottom: '10px' }}>
+            {services.map((service) => {
+              const isSelected = petData.services?.includes(service.service_name);
+              return (
+                <label key={service.service_id} style={{ display: 'block', marginBottom: '8px', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={isSelected || false}
+                    onChange={() => handlePetServiceToggle(petIdKey, service.service_name)}
+                    style={{ marginRight: '8px' }}
+                  />
+                  <span style={{ fontSize: '14px' }}>
+                    {service.service_name} ({service.duration_minutes} min) — {formatCurrency(service.price)}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+
+          {/* Time selection for selected services */}
+          {petData.services && petData.services.length > 0 && (
+            <div style={{ marginTop: '10px' }}>
+              <strong>Select times for {newPet.pet_name}:</strong>
+              {petData.services.map(serviceName => {
+                const serviceInfo = services.find(s => s.service_name === serviceName);
+                return (
+                  <div key={serviceName} style={{ marginTop: '8px', padding: '8px', border: '1px solid #ddd', borderRadius: '4px', backgroundColor: '#fff' }}>
+                    <div style={{ fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}>
+                      {serviceName} ({serviceInfo?.duration_minutes || 30} min) — {formatCurrency(serviceInfo?.price)}
+                    </div>
+                    {loadingSlots[serviceName] ? (
+                      <p style={{ fontSize: '12px' }}>Loading available slots...</p>
+                    ) : availableSlots[serviceName] && availableSlots[serviceName].length > 0 ? (
+                      <select
+                        value={petData.times[serviceName] || ""}
+                        onChange={(e) => handlePetServiceTimeChange(petIdKey, serviceName, e.target.value)}
+                        required
+                        style={{ width: '100%', fontSize: "12px", padding: '4px' }}
+                      >
+                        <option value="">-- Select Time --</option>
+                        {availableSlots[serviceName].map(slot => (
+                          <option key={slot} value={slot}>
+                            {formatTimeSlot(slot)}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <p style={{ color: "#ff6b6b", fontSize: "12px"}}>
+                        No available slots for this service on the selected date.
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      );
+    })}
+
+    {totalCost > 0 && (
+      <div style={{ marginTop: '20px', padding: '15px', backgroundColor: '#e3f2fd', borderRadius: '8px' }}>
+        <p style={{ fontWeight: 600, fontSize: '16px' }}>
           Total Estimated Cost: {formatCurrency(totalCost)}
         </p>
-      </>
+      </div>
     )}
   </>
 )}
@@ -514,29 +808,62 @@ useEffect(() => {
               <h3>Review Appointment Details:</h3>
               <ul className="review-list">
                 <li>
-                  <strong>Pet:</strong>{" "}
-                  {hasPet
-                    ? pets.find((p) => p.pet_id == petId)?.pet_name
-                    : petData.pet_name}
-                </li>
-                <li>
                   <strong>Date:</strong> {formData.date}
                 </li>
                 <li>
-                  <strong>Services ({formData.services.length}):</strong>
-                  <ul style={{ marginTop: '10px', marginLeft: '20px' }} >
-                    {formData.services.map(serviceName => {
-                      const serviceInfo = services.find(s => s.service_name === serviceName);
-                      return (
-                        <li key={serviceName}>
-                          {serviceName} ({serviceInfo?.duration_minutes || 30} min) - {formatTimeSlot(formData[`time-${serviceName}`] || "")} — {formatCurrency(serviceInfo?.price)}
-                        </li>
-                      );
-                    })}
-                  </ul>
+                  <strong>Total Pets:</strong> {selectedPetIds.length + newPets.length}
                 </li>
-                <li style={{ marginTop: '15px'}} >
-                  <strong >Total Cost:</strong> {formatCurrency(totalCost)}
+                
+                {/* Review existing pets */}
+                {selectedPetIds.map(petId => {
+                  const pet = pets.find(p => p.pet_id === petId);
+                  const petData = petServices[petId];
+                  if (!pet || !petData || !petData.services) return null;
+                  
+                  return (
+                    <li key={petId} style={{ marginTop: '15px', padding: '10px', backgroundColor: '#f9f9f9', borderRadius: '4px' }}>
+                      <strong>🐾 {pet.pet_name} ({pet.species || 'Unknown'}):</strong>
+                      <ul style={{ marginTop: '8px', marginLeft: '20px' }}>
+                        {petData.services.map(serviceName => {
+                          const serviceInfo = services.find(s => s.service_name === serviceName);
+                          const time = petData.times[serviceName];
+                          return (
+                            <li key={serviceName}>
+                              {serviceName} ({serviceInfo?.duration_minutes || 30} min) - {formatTimeSlot(time || "")} — {formatCurrency(serviceInfo?.price)}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </li>
+                  );
+                })}
+
+                {/* Review new pets */}
+                {newPets.map(newPet => {
+                  const petIdKey = `new-${newPet.tempId}`;
+                  const petData = petServices[petIdKey];
+                  if (!petData || !petData.services) return null;
+                  
+                  return (
+                    <li key={newPet.tempId} style={{ marginTop: '15px', padding: '10px', backgroundColor: '#fff8e1', borderRadius: '4px' }}>
+                      <strong>🐾 {newPet.pet_name} ({newPet.species || 'Unknown'}) - New Pet:</strong>
+                      <ul style={{ marginTop: '8px', marginLeft: '20px' }}>
+                        {petData.services.map(serviceName => {
+                          const serviceInfo = services.find(s => s.service_name === serviceName);
+                          const time = petData.times[serviceName];
+                          return (
+                            <li key={serviceName}>
+                              {serviceName} ({serviceInfo?.duration_minutes || 30} min) - {formatTimeSlot(time || "")} — {formatCurrency(serviceInfo?.price)}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </li>
+                  );
+                })}
+
+                <li style={{ marginTop: '15px', padding: '10px', backgroundColor: '#e3f2fd', borderRadius: '4px' }}>
+                  <strong>Total Cost:</strong> {formatCurrency(totalCost)}
                 </li>
                 {formData.notes && (
                   <li>
@@ -559,8 +886,8 @@ useEffect(() => {
                 Next Step →
               </button>
             ) : (
-              <button type="submit" className="finish-btn"  onClick={closeModal}>
-                Finish ✔
+              <button type="submit" className="finish-btn">
+                Submit Appointment ✔
               </button>
             )}
           </div>

@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import './profile.css';
 import profile from '../assets/dp.png';
 import notify from '../assets/notif.png';
-import { User, Heart, Calendar, FileText, Mail, Edit2 } from 'lucide-react';
+import { User, Heart, Calendar, FileText, Mail, Edit2, X } from 'lucide-react';
 import { getUser } from '../api/authApi'; 
+import { updateUserProfile } from '../api/userApi';
+import { updateProfilePicture } from '../api/profileApi';
 import UserPet from './UserPet';
 import AppointmentSection from './UserAppointment';
 import Notification from './Notification';
@@ -18,15 +20,44 @@ function UserDashboard() {
   const [notifications, setNotifications] = useState([]);
   const [showNotificationPanel, setShowNotificationPanel] = useState(false);
   const [notificationLoading, setNotificationLoading] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone_number: '',
+    profilePictureFile: null
+  });
+  const [currentUser, setCurrentUser] = useState(user);
+  const [profileImagePreview, setProfileImagePreview] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    setNotification({
-      title: 'Welcome Back!',
-      message: `Hello ${user?.first_name || 'User'}! Your profile is ready.`,
-      type: 'success'
-    });
-  }, [user?.first_name]);
+    const userData = getUser();
+    setCurrentUser(userData);
+    if (userData) {
+      setEditFormData({
+        first_name: userData.first_name || '',
+        last_name: userData.last_name || '',
+        email: userData.email || '',
+        phone_number: userData.phone_number || '',
+        profilePictureFile: null
+      });
+      if (userData.profile_picture) {
+        setProfileImagePreview(userData.profile_picture);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (currentUser?.first_name) {
+      setNotification({
+        title: 'Welcome Back!',
+        message: `Hello ${currentUser.first_name}! Your profile is ready.`,
+        type: 'success'
+      });
+    }
+  }, [currentUser?.first_name]);
 
   const loadNotifications = async () => {
     setNotificationLoading(true);
@@ -48,7 +79,85 @@ function UserDashboard() {
   };
 
   const handleEditProfile = () => {
-    showNotificationToast('Edit Profile', 'Profile editing feature coming soon!', 'info');
+    setShowEditModal(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+  };
+
+  const handleEditFormChange = (e) => {
+    const { name, value } = e.target;
+    setEditFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        showNotificationToast('Error', 'Image size must be less than 5MB', 'error');
+        return;
+      }
+      
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        showNotificationToast('Error', 'Only image files are allowed', 'error');
+        return;
+      }
+      
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const previewUrl = reader.result;
+        setProfileImagePreview(previewUrl);
+        setEditFormData(prev => ({
+          ...prev,
+          profilePictureFile: file 
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    try {
+
+      if (editFormData.profilePictureFile) {
+        const pictureResponse = await updateProfilePicture(editFormData.profilePictureFile);
+        if (!pictureResponse.success) {
+          showNotificationToast('Error', pictureResponse.message || 'Failed to update profile picture', 'error');
+          return;
+        }
+    
+        if (pictureResponse.user) {
+          setCurrentUser(pictureResponse.user);
+        }
+      }
+      
+
+      const profileData = {
+        first_name: editFormData.first_name,
+        last_name: editFormData.last_name,
+        email: editFormData.email,
+        phone_number: editFormData.phone_number
+      };
+      
+      const response = await updateUserProfile(profileData);
+      if (response.success) {
+        setCurrentUser(response.user);
+        showNotificationToast('Success', 'Profile updated successfully!', 'success');
+        setShowEditModal(false);
+      } else {
+        showNotificationToast('Error', response.message || 'Failed to update profile', 'error');
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      showNotificationToast('Error', 'Failed to update profile. Please try again.', 'error');
+    }
   };
 
   const handleNotificationClick = async () => {
@@ -158,60 +267,34 @@ function UserDashboard() {
       </header>
 
       <div className="main-content">
-        <aside className="sidebar">
-          <ul className="sidebar-menu">
-            <li>
-              <a href="#profile" className="active">
-                <User size={20} />
-                <span>Profile</span>
-              </a>
-            </li>
-            <li>
-              <button 
-                onClick={() => navigate('/pet-profile')}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  padding: '12px 16px',
-                  width: '100%',
-                  cursor: 'pointer',
-                  color: 'inherit',
-                  fontSize: 'inherit'
-                }}
-              >
-                <Heart size={20} />
-                <span>Pet Profile</span>
-              </button>
-            </li>
-            <li>
-              <a href="#appointments">
-                <Calendar size={20} />
-                <span>Appointment</span>
-              </a>
-            </li>
-            <li>
-              <a href="#records">
-                <FileText size={20} />
-                <span>Pet Record</span>
-              </a>
-            </li>
-          </ul>
-        </aside>
+       
+      
 
         <div className="content-area">
           <div className="profile-card">
             <div className="profile-header">
-              <div className="profile-avatar" style={{ backgroundImage: `url(${profile})` }} ></div>
+              <div 
+                className="profile-avatar" 
+                style={{ 
+                  backgroundImage: currentUser?.profile_picture 
+                    ? `url(http://localhost:5000${currentUser.profile_picture})` 
+                    : `url(${profile})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center'
+                }} 
+              ></div>
               <div className="profile-info">
-                <h2>{user?.first_name} {user?.last_name}</h2>
-                <p className="user-id">ID: {user?.id}</p>
+                <h2>{currentUser?.first_name} {currentUser?.last_name}</h2>
+                <p className="user-id">ID: {currentUser?.id}</p>
                 <p className="user-email">
                   <Mail size={16} />
-                  {user?.email}
+                  {currentUser?.email}
                 </p>
+                {currentUser?.phone_number && (
+                  <p className="user-phone" style={{ color: '#9ca3af', marginTop: '5px' }}>
+                    📞 {currentUser.phone_number}
+                  </p>
+                )}
               </div>
               <button className="btn-edit" onClick={handleEditProfile}>
                 <Edit2 size={16} />
@@ -219,6 +302,104 @@ function UserDashboard() {
               </button>
             </div>
           </div>
+
+          {/* Edit Profile Modal */}
+          {showEditModal && (
+            <div className="modal-overlay" onClick={handleCloseEditModal}>
+              <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                  <h2>Edit Profile</h2>
+                  <button onClick={handleCloseEditModal} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '24px' }}>
+                    <X size={24} />
+                  </button>
+                </div>
+                <form onSubmit={handleSaveProfile}>
+                  <div style={{ marginBottom: '15px' }}>
+                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600' }}>First Name</label>
+                    <input
+                      type="text"
+                      name="first_name"
+                      value={editFormData.first_name}
+                      onChange={handleEditFormChange}
+                      required
+                      style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }}
+                    />
+                  </div>
+                  <div style={{ marginBottom: '15px' }}>
+                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600' }}>Last Name</label>
+                    <input
+                      type="text"
+                      name="last_name"
+                      value={editFormData.last_name}
+                      onChange={handleEditFormChange}
+                      required
+                      style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }}
+                    />
+                  </div>
+                  <div style={{ marginBottom: '15px' }}>
+                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600' }}>Email</label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={editFormData.email}
+                      onChange={handleEditFormChange}
+                      required
+                      style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }}
+                    />
+                  </div>
+                  <div style={{ marginBottom: '15px' }}>
+                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600' }}>Phone Number</label>
+                    <input
+                      type="text"
+                      name="phone_number"
+                      value={editFormData.phone_number || ''}
+                      onChange={handleEditFormChange}
+                      style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }}
+                    />
+                  </div>
+                  <div style={{ marginBottom: '15px' }}>
+                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600' }}>Profile Picture</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }}
+                    />
+                    {profileImagePreview && (
+                      <div style={{ marginTop: '10px' }}>
+                        <img 
+                          src={profileImagePreview} 
+                          alt="Preview" 
+                          style={{ 
+                            width: '100px', 
+                            height: '100px', 
+                            borderRadius: '8px', 
+                            objectFit: 'cover',
+                            border: '2px solid #ddd'
+                          }} 
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                    <button
+                      type="button"
+                      onClick={handleCloseEditModal}
+                      style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid #ddd', background: 'white', cursor: 'pointer' }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', background: '#667eea', color: 'white', cursor: 'pointer', fontWeight: '600' }}
+                    >
+                      Save Changes
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
 
           <div className="section-title">
             <Heart size={20} />

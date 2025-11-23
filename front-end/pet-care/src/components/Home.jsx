@@ -99,7 +99,7 @@ function Home() {
             <p className={`hero-subtitle ${isVisible ? 'animate-in delay-1' : ''}`}>
               Because Every Paw Deserves Perfect Care
             </p>
-            <button className={`cta-btn ${isVisible ? 'animate-in delay-2' : ''}`} onClick={() => navigate('/UserDashboard')}>
+            <button className={`cta-btn ${isVisible ? 'animate-in delay-2' : ''}`} onClick={() => navigate('/login')}>
               Let’s get started!
             </button>
           </div>

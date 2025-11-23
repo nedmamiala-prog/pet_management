@@ -17,7 +17,7 @@ const User = {
   },
 
   findById: (user_id, callback) => {
-    const sql = "SELECT * FROM user WHERE user_id = ?";
+    const sql = "SELECT user_id, first_name, last_name, username, email, phone_number, profile_picture FROM user WHERE user_id = ?";
     db.query(sql, [user_id], callback);
   },
   
@@ -27,6 +27,21 @@ const User = {
    
     const sql = "INSERT INTO user (first_name, last_name, username, email, password, phone_number, google_id) VALUES (?, ?, ?, ?, ?, ?, ?)";
     db.query(sql, [first_name, last_name, username, email, null, null, google_id], callback);
+  },
+
+  updateProfilePicture: (user_id, profile_picture_path, callback) => {
+    const sql = "UPDATE user SET profile_picture = ? WHERE user_id = ?";
+    db.query(sql, [profile_picture_path, user_id], callback);
+  },
+
+  update: (user_id, first_name, last_name, email, phone_number, profile_picture, callback) => {
+    if (profile_picture) {
+      const sql = "UPDATE user SET first_name = ?, last_name = ?, email = ?, phone_number = ?, profile_picture = ? WHERE user_id = ?";
+      db.query(sql, [first_name, last_name, email, phone_number, profile_picture, user_id], callback);
+    } else {
+      const sql = "UPDATE user SET first_name = ?, last_name = ?, email = ?, phone_number = ? WHERE user_id = ?";
+      db.query(sql, [first_name, last_name, email, phone_number, user_id], callback);
+    }
   }
 
 };

@@ -12,6 +12,8 @@ import { logoutUser } from '../api/authApi';
 import { getUserNotifications, markNotificationAsRead } from '../api/notificationApi';
 
 function UserDashboard() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -74,8 +76,17 @@ function UserDashboard() {
 
   const toggleMenu = () => setIsMenuOpen((prev) => !prev);
   const handleLogout = () => {
+    setShowLogoutModal(true);
+  };
+
+  const confirmLogout = () => {
     logoutUser();
     navigate('/login');
+    setShowLogoutModal(false);
+  };
+
+  const cancelLogout = () => {
+    setShowLogoutModal(false);
   };
 
   const showNotificationAlert = (title, message, type = 'info') => {
@@ -242,9 +253,27 @@ function UserDashboard() {
               style={{ backgroundImage: `url(${profile})` }}
             ></div>
             <button className="logout-btn" onClick={handleLogout}>
-              Logout
+              LOGOUT
             </button>
           </div>
+
+        
+          {showLogoutModal && (
+            <div className="modal-overlay-logout" onClick={cancelLogout}>
+              <div className="modal-content-logout" onClick={(e) => e.stopPropagation()}>
+                <h3>Confirm Logout</h3>
+                <p>Are you sure you want to logout?</p>
+                <div className="modal-buttons-logout">
+                  <button className="btn-cancel-logout" onClick={cancelLogout}>
+                    Cancel
+                  </button>
+                  <button className="btn-logout" onClick={confirmLogout}>
+                    Logout
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           <button className="mobile-menu-btn" onClick={toggleMenu}>
             {isMenuOpen ? '✕' : '☰'}
@@ -261,7 +290,7 @@ function UserDashboard() {
         )}
       </header>
 
-      {/* HERO */}
+
       <section id="home" className="hero" style={{ backgroundImage: `url(${heroBg})` }}>
         <div className="hero-overlay"></div>
         <div className="hero-content">

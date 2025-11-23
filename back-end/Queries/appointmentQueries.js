@@ -78,8 +78,9 @@ const Appointment = {
       SELECT 
         pet_id,
         pet_name,
+        birthdate,
+        species,
         breed,
-        age,
         gender,
         medical_history
       FROM pet

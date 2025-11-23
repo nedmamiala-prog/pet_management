@@ -170,7 +170,7 @@ useEffect(() => {
           <div className="top-row">
             
             <div className="page-title">
-              <h3>Pet Care Appointments</h3>
+              <h2>Pet Care Appointments</h2>
               <h4>Manage your pet clients’ appointments and schedules</h4>
             </div>
           </div>

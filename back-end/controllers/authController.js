@@ -76,7 +76,8 @@ exports.login = async (req, res) => {
     first_name: user.first_name,
     last_name: user.last_name,
     email: user.email,
-    phone_number: user.phone_number
+    phone_number: user.phone_number,
+    profile_picture: user.profile_picture
   }
 });
     }
@@ -309,4 +310,97 @@ exports.googleCallback = async (req, res) => {
       return redirectWithError(res, `Authentication failed: ${error.message || 'Unknown error'}`);
     }
   }
+};
+
+exports.updateProfilePicture = (req, res) => {
+  const user_id = req.user.id;
+  
+  if (!req.file) {
+    return res.status(400).json({ message: "No file uploaded" });
+  }
+
+  const profile_picture_path = `/uploads/profile-pictures/${req.file.filename}`;
+
+  User.updateProfilePicture(user_id, profile_picture_path, (err, result) => {
+    if (err) {
+      console.error("Profile picture update error:", err);
+      return res.status(500).json({ message: "Error updating profile picture", error: err });
+    }
+
+    // Get updated user data
+    User.findById(user_id, (findErr, userResults) => {
+      if (findErr || !userResults || userResults.length === 0) {
+        return res.status(500).json({ message: "Error fetching updated profile" });
+      }
+
+      const updatedUser = userResults[0];
+      const userData = {
+        id: updatedUser.user_id,
+        first_name: updatedUser.first_name,
+        last_name: updatedUser.last_name,
+        email: updatedUser.email,
+        phone_number: updatedUser.phone_number,
+        username: updatedUser.username,
+        profile_picture: updatedUser.profile_picture || null
+      };
+      
+      res.status(200).json({
+        success: true,
+        message: "Profile picture updated successfully",
+        user: userData
+      });
+    });
+  });
+};
+
+exports.updateProfile = (req, res) => {
+  const user_id = req.user.id;
+  const { first_name, last_name, email, phone_number, profile_picture } = req.body;
+
+  if (!first_name || !last_name || !email) {
+    return res.status(400).json({ message: "First name, last name, and email are required" });
+  }
+
+  // Check if email is already taken by another user
+  User.findByEmail(email, (err, results) => {
+    if (err) {
+      return res.status(500).json({ message: "Database error", error: err });
+    }
+    
+    const emailTaken = results.length > 0 && results[0].user_id !== user_id;
+    if (emailTaken) {
+      return res.status(400).json({ message: "Email is already taken by another user" });
+    }
+
+    User.update(user_id, first_name, last_name, email, phone_number || null, profile_picture || null, (err, result) => {
+      if (err) {
+        console.error("Profile update error:", err);
+        return res.status(500).json({ message: "Error updating profile", error: err });
+      }
+
+      // Get updated user data
+      User.findById(user_id, (findErr, userResults) => {
+        if (findErr || !userResults || userResults.length === 0) {
+          return res.status(500).json({ message: "Error fetching updated profile" });
+        }
+
+        const updatedUser = userResults[0];
+        const userData = {
+          id: updatedUser.user_id,
+          first_name: updatedUser.first_name,
+          last_name: updatedUser.last_name,
+          email: updatedUser.email,
+          phone_number: updatedUser.phone_number,
+          username: updatedUser.username,
+          profile_picture: updatedUser.profile_picture || null
+        };
+        
+        res.status(200).json({
+          success: true,
+          message: "Profile updated successfully",
+          user: userData
+        });
+      });
+    });
+  });
 };

@@ -1,20 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './profile.css';
-import './AdminAppointmentPage.css';
+
+
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { getAllBilling, adminPayBilling } from '../api/billingApi';
 import { FaSearch } from 'react-icons/fa';
 
-// Helper to detect payment method from reference
+
 function getPaymentMethod(reference) {
   if (!reference) return null;
   // PayPal order IDs typically start with 3C or contain hyphens (UUID format)
   if (reference.match(/^3C|[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}/i)) {
     return 'PayPal';
   }
-  // Otherwise show the manual entry (cash, check, etc.)
+ 
   return reference;
 }
 
@@ -110,7 +110,7 @@ export default function AdminBilling() {
         <div className="admin-appointment-wrapper">
           <div className="top-row">
             <div className="page-title">
-              <h3>Admin Billing Management</h3>
+              <h2>Admin Billing Management</h2>
               <h4>Review invoices and record payments</h4>
             </div>
           </div>

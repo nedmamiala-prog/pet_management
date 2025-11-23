@@ -1,22 +1,69 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BsCalendar, BsBarChartFill, BsJournalMedical, BsHourglassSplit } from 'react-icons/bs';
 import './Admin.css';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import { getDashboardStats } from '../api/dashboardApi';
 
 function AdminHome() {
+  const [stats, setStats] = useState({
+    petRecords: 0,
+    todayAppointments: 0,
+    monthlyRevenue: 0,
+    pendingApprovals: 0,
+    totalUsers: 0,
+    totalPets: 0
+  });
+  const [pendingAppointments, setPendingAppointments] = useState([]);
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // ----- STATIC SAMPLE DATA -----
-  const pendingApprovals = [
-    { id: 1, name: "Rinrin" },
-    { id: 2, name: "Rinrin" },
-  ];
-
-  const recentActivity = [
-    { id: 1, text: "Appointment approved for Rinrin", time: "6 mins ago", color: "#c8f7d2" },
-    { id: 2, text: "Appointment approved for Rinrin", time: "6 mins ago", color: "#d8ffd8" },
-    { id: 3, text: "Appointment approved for Rinrin", time: "6 mins ago", color: "#f0d8ff" },
-  ];
+  useEffect(() => {
+    async function fetchDashboardData() {
+      try {
+        setLoading(true);
+        const response = await getDashboardStats();
+        console.log('Dashboard response:', response);
+        if (response.success) {
+          setStats(response.stats || {
+            petRecords: 0,
+            todayAppointments: 0,
+            monthlyRevenue: 0,
+            pendingApprovals: 0,
+            totalUsers: 0,
+            totalPets: 0
+          });
+          setPendingAppointments(response.pendingAppointments || []);
+          setRecentActivity(response.recentActivity || []);
+        } else {
+          console.error('Dashboard API error:', response.message);
+      
+          setStats({
+            petRecords: 0,
+            todayAppointments: 0,
+            monthlyRevenue: 0,
+            pendingApprovals: 0,
+            totalUsers: 0,
+            totalPets: 0
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+       
+        setStats({
+          petRecords: 0,
+          todayAppointments: 0,
+          monthlyRevenue: 0,
+          pendingApprovals: 0,
+          totalUsers: 0,
+          totalPets: 0
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchDashboardData();
+  }, []);
 
   return (
     <div className="grid-container">
@@ -30,12 +77,15 @@ function AdminHome() {
           <h4>Have a nice day.</h4>
         </div>
 
-        {/* Top Cards */}
+    
         <div className="main-cards">
           <div className="card">
             <div className="card-inner">
+            
               <h3>Pet Records</h3>
               <BsJournalMedical className="card_icon" />
+              
+              {!loading && <div className="card-value">{stats.petRecords}</div>}
             </div>
           </div>
 
@@ -43,6 +93,7 @@ function AdminHome() {
             <div className="card-inner">
               <h3>Today's Appointments</h3>
               <BsCalendar className="card_icon" />
+              {!loading && <div className="card-value">{stats.todayAppointments}</div>}
             </div>
           </div>
 
@@ -50,6 +101,7 @@ function AdminHome() {
             <div className="card-inner">
               <h3>Monthly Revenue</h3>
               <BsBarChartFill className="card_icon" />
+             {!loading && <div className="card-value">₱{Number(stats.monthlyRevenue || 0).toFixed(2)}</div>}
             </div>
           </div>
 
@@ -57,42 +109,53 @@ function AdminHome() {
             <div className="card-inner">
               <h3>Pending Approvals</h3>
               <BsHourglassSplit className="card_icon" />
+              {!loading && <div className="card-value">{stats.pendingApprovals}</div>}
             </div>
           </div>
         </div>
 
-        {/* NEW SECTIONS BELOW CARDS */}
+ 
         <div className="approval-section">
           
-          {/* PENDING APPROVALS */}
+        
           <div className="pending-box">
             <h3 className="section-title">⏳ Pending Approvals</h3>
 
-            {pendingApprovals.map(item => (
-              <div key={item.id} className="pending-item">
-                <h4>Appointment: {item.name}</h4>
-
-                <div className="btn-group">
-                  <button className="approve-btn">Approve</button>
-                  <button className="decline-btn">Decline</button>
+            {loading ? (
+              <div style={{ padding: '20px', textAlign: 'center' }}>Loading...</div>
+            ) : pendingAppointments.length > 0 ? (
+              pendingAppointments.map(item => (
+                <div key={item.id} className="pending-item">
+                  <h4>Appointment: {item.name} - {item.petName}</h4>
+                  <p style={{ fontSize: '14px', color: '#666', marginTop: '4px' }}>
+                    {item.service} - {new Date(item.dateTime).toLocaleString()}
+                  </p>
                 </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>No pending approvals</div>
+            )}
           </div>
 
           {/* RECENT ACTIVITY */}
           <div className="activity-box">
             <h3 className="section-title">🕒 Recent Activity</h3>
 
-            {recentActivity.map(a => (
-              <div key={a.id} className="activity-item" style={{ background: a.color }}>
-                <div className="dot"></div>
-                <div>
-                  <p>{a.text}</p>
-                  <span>{a.time}</span>
+            {loading ? (
+              <div style={{ padding: '20px', textAlign: 'center' }}>Loading...</div>
+            ) : recentActivity.length > 0 ? (
+              recentActivity.map((a, index) => (
+                <div key={index} className="activity-item" style={{ background: a.color || '#c8f7d2' }}>
+                  <div className="dot"></div>
+                  <div>
+                    <p>{a.text}</p>
+                   
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>No recent activity</div>
+            )}
           </div>
 
         </div>

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { CreditCard } from 'lucide-react';
 import { getUserBilling, payBilling } from '../api/billingApi';
-import './profile.css';
+import './billingSection.css';
+
 
 
 function getPaymentMethod(reference) {

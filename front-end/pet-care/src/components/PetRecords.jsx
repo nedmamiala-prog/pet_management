@@ -1,24 +1,32 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./PetRecords.css";
 import { FaSearch, FaFilter } from "react-icons/fa";
 import Sidebar from './Sidebar';
 import Header from './Header';
+import { getAllPets } from '../api/petApi';
+import { getAllPetRecords, createPetRecord, updatePetRecord, deletePetRecord } from '../api/petRecordApi';
 
-// Thumbnail you uploaded (developer-provided local path)
+
 const FIGMA_THUMBNAIL = "/mnt/data/2975c55f-667c-464a-92e9-311428588de6.png";
 
+
+const calculateAge = (birthdate) => {
+  if (!birthdate) return 'Unknown';
+  const birth = new Date(birthdate);
+  const today = new Date();
+  const years = today.getFullYear() - birth.getFullYear();
+  const months = today.getMonth() - birth.getMonth();
+  
+  if (years === 0) {
+    return `${months} month${months !== 1 ? 's' : ''} old`;
+  } else if (years === 1 && months === 0) {
+    return '1 year old';
+  } else {
+    return `${years} year${years !== 1 ? 's' : ''} old`;
+  }
+};
+
 export default function PetRecords() {
-  const initialPets = [
-    { id: "INV-001", owner: "UARMAN", name: "Miso", species: "Cat", gender: "Female", age: "1 year old", records: [
-      { id: "R-1001", service: "Dental Cleaning", data: { diagnosis: "Tartar", recommendation: "Brush 2x/week", savedAt: new Date().toISOString() } }
-    ] },
-    { id: "INV-002", owner: "Skriss Lee", name: "Bim", species: "Cat", gender: "Female", age: "1 year old", records: [] },
-    { id: "INV-003", owner: "Kristine", name: "Chow", species: "Cat", gender: "Female", age: "1 year old", records: [] },
-    { id: "INV-004", owner: "Ran D.", name: "Omen", species: "Cat", gender: "Female", age: "1 year old", records: [] },
-    { id: "INV-005", owner: "Reaten", name: "Yura", species: "Cat", gender: "Female", age: "1 year old", records: [] },
-    { id: "INV-006", owner: "Marly Hoyly", name: "Brimstone", species: "Cat", gender: "Female", age: "1 year old", records: [] },
-    { id: "INV-007", owner: "Bojack", name: "Tinetine", species: "Cat", gender: "Female", age: "1 year old", records: [] },
-  ];
 
   const SERVICES = [
     { key: "Dental Cleaning", label: "Dental Cleaning", icon: "🦷" },
@@ -29,13 +37,17 @@ export default function PetRecords() {
     { key: "Reminder", label: "Reminder", icon: "🔔" },
   ];
 
-  const [pets, setPets] = useState(initialPets);
+  const [pets, setPets] = useState([]);
   const [selectedPet, setSelectedPet] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [speciesFilter, setSpeciesFilter] = useState("all");
+  const [genderFilter, setGenderFilter] = useState("all");
 
   // Add record flow (external button)
   const [openAddRecordSelector, setOpenAddRecordSelector] = useState(false);
   const [openServiceForm, setOpenServiceForm] = useState(false);
-  const [targetPetId, setTargetPetId] = useState(initialPets[0].id); // pet to add record to
+  const [targetPetId, setTargetPetId] = useState(null); // pet to add record to
   const [selectedService, setSelectedService] = useState(null);
 
   // For both add and edit forms
@@ -45,6 +57,56 @@ export default function PetRecords() {
   // Edit flow: open edit form for existing record
   const [editingRecord, setEditingRecord] = useState(null);
 
+  // Fetch pets and records from backend
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setLoading(true);
+        const petsResponse = await getAllPets();
+        const recordsResponse = await getAllPetRecords();
+
+        if (petsResponse.success && recordsResponse.success) {
+          // Combine pets with their records
+          const petsWithRecords = petsResponse.pets.map(pet => {
+            const petRecords = (recordsResponse.records || [])
+              .filter(r => r && r.pet_id === pet.pet_id)
+              .map(r => ({
+                id: `R-${r.record_id}`,
+                record_id: r.record_id,
+                service: r.service_type,
+                data: r.record_data || {}
+              }));
+
+            return {
+              id: pet.pet_id,
+              pet_id: pet.pet_id,
+              owner: `${pet.first_name || ''} ${pet.last_name || ''}`.trim() || 'Unknown',
+              name: pet.pet_name,
+              species: pet.species || 'Unknown',
+              gender: pet.gender || 'Unknown',
+              birthdate: pet.birthdate,
+              age: calculateAge(pet.birthdate),
+              profile_picture: pet.profile_picture || null,
+              records: petRecords
+            };
+          });
+
+          setPets(petsWithRecords);
+      
+          if (petsWithRecords.length > 0 && targetPetId === null) {
+            setTargetPetId(petsWithRecords[0].id);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+   
+  }, []);
+
   // open pet profile modal (view)
   const openPet = (p) => {
     // ensure we pull latest pet object from pets state
@@ -53,27 +115,79 @@ export default function PetRecords() {
   };
 
   // helper: save new record to pet id
-  function addRecordToPet(petId, record) {
-    setPets(prev => prev.map(p => p.id === petId ? { ...p, records: [...p.records, record] } : p));
-    // refresh selectedPet view if it's the same pet
-    if (selectedPet && selectedPet.id === petId) {
-      setSelectedPet(prev => ({ ...prev, records: [...prev.records, record] }));
+  async function addRecordToPet(petId, record) {
+    try {
+      const response = await createPetRecord({
+        pet_id: petId,
+        service_type: record.service,
+        data: record.data
+      });
+
+      if (response.success) {
+        const newRecord = {
+          id: `R-${response.record.record_id}`,
+          record_id: response.record.record_id,
+          service: record.service,
+          data: record.data
+        };
+
+        setPets(prev => prev.map(p => p.id === petId ? { ...p, records: [...p.records, newRecord] } : p));
+        // refresh selectedPet view if it's the same pet
+        if (selectedPet && selectedPet.id === petId) {
+          setSelectedPet(prev => ({ ...prev, records: [...prev.records, newRecord] }));
+        }
+      }
+    } catch (error) {
+      console.error('Error adding record:', error);
     }
   }
 
-  function updateRecordOnPet(petId, recordId, updatedRecord) {
-    setPets(prev => prev.map(p => {
-      if (p.id !== petId) return p;
-      return { ...p, records: p.records.map(r => r.id === recordId ? updatedRecord : r) };
-    }));
-    if (selectedPet && selectedPet.id === petId) {
-      setSelectedPet(prev => ({ ...prev, records: prev.records.map(r => r.id === recordId ? updatedRecord : r) }));
+  async function updateRecordOnPet(petId, recordId, updatedRecord) {
+    try {
+      const record_id = updatedRecord.record_id || parseInt(recordId.replace('R-', ''));
+      const response = await updatePetRecord(record_id, {
+        service_type: updatedRecord.service,
+        data: updatedRecord.data
+      });
+
+      if (response.success) {
+        setPets(prev => prev.map(p => {
+          if (p.id !== petId) return p;
+          return { ...p, records: p.records.map(r => r.id === recordId ? updatedRecord : r) };
+        }));
+        if (selectedPet && selectedPet.id === petId) {
+          setSelectedPet(prev => ({ ...prev, records: prev.records.map(r => r.id === recordId ? updatedRecord : r) }));
+        }
+      }
+    } catch (error) {
+      console.error('Error updating record:', error);
+    }
+  }
+
+  async function deleteRecordFromPet(petId, recordId) {
+    try {
+      const record_id = parseInt(recordId.replace('R-', ''));
+      const response = await deletePetRecord(record_id);
+
+      if (response.success) {
+        setPets(prev => prev.map(p => {
+          if (p.id !== petId) return p;
+          return { ...p, records: p.records.filter(r => r.id !== recordId) };
+        }));
+        if (selectedPet && selectedPet.id === petId) {
+          setSelectedPet(prev => ({ ...prev, records: prev.records.filter(r => r.id !== recordId) }));
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting record:', error);
     }
   }
 
   // trigger Add Record flow (external button)
   const handleOpenAddRecord = () => {
-    setTargetPetId(initialPets[0].id);
+    if (pets.length > 0) {
+      setTargetPetId(pets[0].id);
+    }
     setSelectedService(null);
     setFormData(emptyForm);
     setOpenAddRecordSelector(true);
@@ -163,26 +277,41 @@ export default function PetRecords() {
           <div className="stats-cards">
             <div className="stat-box">
               <h4>Total Users</h4>
-              <h2>100</h2>
+              <h2>{new Set(pets.map(p => p.owner)).size}</h2>
             </div>
             <div className="stat-box">
-              <h4>Total Pets Registered</h4>
+              <h4>Total Pets</h4>
               <h2>{pets.length}</h2>
             </div>
           </div>
 
           {/* SEARCH */}
           <div className="search-container">
-            <FaSearch className="search-icon" />
-            <input type="text" placeholder="Search by pet name or owner name" />
+        
+            <input 
+              type="text" 
+              placeholder="Search by pet name or owner name" 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
 
           {/* FILTERS */}
           <div className="filters">
             <button><FaFilter /> Filters</button>
-            <select><option>Species</option></select>
-            <select><option>Gender</option></select>
-            <select><option>Age</option></select>
+            <select value={speciesFilter} onChange={(e) => setSpeciesFilter(e.target.value)}>
+              <option value="all">All Species</option>
+              <option value="Dog">Dog</option>
+              <option value="Cat">Cat</option>
+              <option value="Bird">Bird</option>
+              <option value="Rabbit">Rabbit</option>
+              <option value="Other">Other</option>
+            </select>
+            <select value={genderFilter} onChange={(e) => setGenderFilter(e.target.value)}>
+              <option value="all">All Gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
           </div>
 
           {/* TABLE */}
@@ -201,9 +330,41 @@ export default function PetRecords() {
               </thead>
 
               <tbody>
-                {pets.map((p) => (
+                {loading ? (
+                  <tr>
+                    <td colSpan="7" style={{ textAlign: 'center', padding: '20px' }}>Loading...</td>
+                  </tr>
+                ) : pets
+                  .filter(p => {
+                    const matchesSearch = searchTerm === "" || 
+                      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      p.owner.toLowerCase().includes(searchTerm.toLowerCase());
+                    const matchesSpecies = speciesFilter === "all" || p.species === speciesFilter;
+                    const matchesGender = genderFilter === "all" || p.gender === genderFilter;
+                    return matchesSearch && matchesSpecies && matchesGender;
+                  })
+                  .map((p) => (
                   <tr key={p.id}>
-                    <td><div className="pet-img-box"></div></td>
+                    <td>
+                      <div
+                        className="pet-img-box"
+                        style={{
+                          backgroundImage: p.profile_picture
+                            ? `url(http://localhost:5000${p.profile_picture})`
+                            : 'none',
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#fff',
+                          fontWeight: 600,
+                          fontSize: '0.8rem',
+                        }}
+                      >
+                        {!p.profile_picture && (p.name ? p.name.charAt(0).toUpperCase() : '?')}
+                      </div>
+                    </td>
                     <td>{p.owner}</td>
                     <td>{p.name}</td>
                     <td>{p.species}</td>
@@ -211,7 +372,6 @@ export default function PetRecords() {
                     <td>{p.age}</td>
                     <td>
                       <button className="view-btn" onClick={() => openPet(p)}>View</button>
-                      <button className="delete-btn" onClick={() => setPets(prev => prev.filter(x => x.id !== p.id))}>Delete</button>
                     </td>
                   </tr>
                 ))}
@@ -228,7 +388,16 @@ export default function PetRecords() {
               <div className="modal-container" onClick={(e) => e.stopPropagation()}>
 
                 <div className="modal-profile-section">
-                  <div className="modal-image"></div>
+                  <div
+                    className="modal-image"
+                    style={{
+                      backgroundImage: selectedPet.profile_picture
+                        ? `url(http://localhost:5000${selectedPet.profile_picture})`
+                        : 'none',
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                    }}
+                  ></div>
 
                   <div className="modal-profile-info">
                     <h2>{selectedPet.name}</h2>
@@ -237,6 +406,7 @@ export default function PetRecords() {
                       <div><strong>Owner:</strong> {selectedPet.owner}</div>
                       <div><strong>Species:</strong> {selectedPet.species}</div>
                       <div><strong>Gender:</strong> {selectedPet.gender}</div>
+                      <div><strong>Birthdate:</strong> {selectedPet.birthdate ? new Date(selectedPet.birthdate).toLocaleDateString() : 'Unknown'}</div>
                       <div><strong>Age:</strong> {selectedPet.age}</div>
                     </div>
 
@@ -256,14 +426,19 @@ export default function PetRecords() {
                         <h4>{r.service}</h4>
                         <div style={{ display: "flex", gap: 8 }}>
                           <button className="record-edit-btn" onClick={() => handleEditRecord(selectedPet.id, r)}>Edit</button>
+                          <button className="delete-btn" onClick={() => deleteRecordFromPet(selectedPet.id, r.id)}>Delete</button>
                         </div>
                       </div>
                       <div style={{ marginTop: 8 }}>
                         {/* simple pretty display */}
                         {Object.entries(r.data).map(([k, v]) => (
-                          k !== "savedAt" && <p key={k}><strong>{k.charAt(0).toUpperCase() + k.slice(1)}:</strong> {String(v)}</p>
+                          k !== "savedAt" && v && <p key={k}><strong>{k.charAt(0).toUpperCase() + k.slice(1)}:</strong> {String(v)}</p>
                         ))}
-                        <div style={{ fontSize: 12, color: "#666", marginTop: 6 }}>Saved: {new Date(r.data.savedAt).toLocaleString()}</div>
+                        {r.data.savedAt && (
+                          <div style={{ fontSize: 12, color: "#666", marginTop: 6 }}>
+                            Saved: {new Date(r.data.savedAt).toLocaleString()}
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}

@@ -1,0 +1,64 @@
+.billing-table table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto; /* important! */
+  
+}
+
+.billing-table th,
+.billing-table td {
+  padding: 12px 16px;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.billing-table th {
+  font-weight: 600;
+  color: #1f2937;
+  background: #f8fafc;
+}
+
+.billing-table td .action-btn {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: none;
+  background-color: #3b82f6;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.billing-status {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 13px;
+  text-transform: capitalize;
+}
+
+.billing-status.pending {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.billing-status.overdue {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.billing-status.paid {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.billing-status.void {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.billing-table th:nth-child(5),
+.billing-table td:nth-child(5) {
+  width: 150px; /* or whatever suits your button size */
+  white-space: nowrap;
+}

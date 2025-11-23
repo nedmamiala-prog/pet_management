@@ -1,7 +1,7 @@
 .petrecord-container {
-  padding: 2rem;
+
   font-family: "Poppins", sans-serif;
-  margin-left: 260px;
+
 }
 
 .record-header {
@@ -19,6 +19,7 @@
   cursor: pointer;
   font-weight: 600;
 }
+
 
 .stats-cards {
   display: flex;

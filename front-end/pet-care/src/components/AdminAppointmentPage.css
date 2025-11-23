@@ -1,16 +1,18 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
 
 .grid-container-admin {
-  font-family: 'Poppins', sans-serif;
+  font-family: "Poppins", sans-serif;
   min-height: 100vh;
   display: grid;
   grid-template-columns: 260px 1fr;
   background: #f4f6fb;
 }
 
-.main-container {
-  padding: 30px;
+.grid-container-admin .main-container {
+  margin-left: 0;
 }
+
+
 
 .cancel-modal-overlay {
   position: fixed;

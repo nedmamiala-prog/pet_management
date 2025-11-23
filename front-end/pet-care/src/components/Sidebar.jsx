@@ -42,11 +42,7 @@ function Sidebar() {
                 <BsCreditCard className='icon'/> Billing
                 </Link>
         </li>
-        <li className='sidebar-list-item'>
-                <Link to="#">
-                    <BsFillGearFill className='icon'/> Setting
-                </Link>
-            </li>
+        
       </ul>
 
 

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import './userappointment.css'
 import { Calendar } from 'lucide-react';
 import { getUserAppointment, cancelAppointment } from '../api/appointmentApi'; 
-import './profile.css';
+
 
 function AppointmentSection() {
   const [activeTab, setActiveTab] = useState('pending');
@@ -9,6 +10,8 @@ function AppointmentSection() {
   const [loading, setLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState(null);
   const [notification, setNotification] = useState(null);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [appointmentToCancel, setAppointmentToCancel] = useState(null);
 
   const handleTabClick = (tab) => {
     setActiveTab(tab);
@@ -31,13 +34,19 @@ function AppointmentSection() {
     fetchAppointments();
   }, []);
 
-  const handleCancel = async (appointment) => {
-    const confirmCancel = window.confirm('Are you sure you want to cancel this appointment?');
-    if (!confirmCancel) return;
+  const handleCancelClick = (appointment) => {
+    setAppointmentToCancel(appointment);
+    setShowCancelConfirm(true);
+  };
 
-    setCancellingId(appointment.appointment_id);
-    const response = await cancelAppointment(appointment.appointment_id, 'Cancelled by user');
+  const handleCancelConfirm = async () => {
+    if (!appointmentToCancel) return;
+
+    setCancellingId(appointmentToCancel.appointment_id);
+    const response = await cancelAppointment(appointmentToCancel.appointment_id, 'Cancelled by user');
     setCancellingId(null);
+    setShowCancelConfirm(false);
+    setAppointmentToCancel(null);
 
     if (!response.success) {
       setNotification({
@@ -49,11 +58,21 @@ function AppointmentSection() {
 
     setAppointments((prev) =>
       prev.map((appt) =>
-        appt.appointment_id === appointment.appointment_id
+        appt.appointment_id === appointmentToCancel.appointment_id
           ? { ...appt, status: 'Cancelled' }
           : appt
       )
     );
+
+    setNotification({
+      title: 'Success',
+      message: 'Appointment cancelled successfully.',
+    });
+  };
+
+  const handleCancelCancel = () => {
+    setShowCancelConfirm(false);
+    setAppointmentToCancel(null);
   };
 
   const filteredAppointments = appointments.filter(
@@ -110,7 +129,7 @@ function AppointmentSection() {
                     <td>{new Date(appt.date_time).toLocaleString()}</td>
                     <td>{appt.service}</td>
                     <td>
-                      <span className={`status-badge status-${appt.status.toLowerCase()}`}>
+                     <span className={`status-badge status-${appt.status.trim().toLowerCase()}`}>
                         {appt.status}
                       </span>
                     </td>
@@ -118,7 +137,7 @@ function AppointmentSection() {
                       {['pending'].includes(appt.status.toLowerCase()) ? (
                         <button
                           className="action-btn cancel"
-                          onClick={() => handleCancel(appt)}
+                          onClick={() => handleCancelClick(appt)}
                           disabled={cancellingId === appt.appointment_id}
                         >
                           {cancellingId === appt.appointment_id ? 'Cancelling...' : 'Cancel'}
@@ -141,6 +160,72 @@ function AppointmentSection() {
         )}
       </div>
 
+      {/* Cancel Confirmation Modal */}
+      {showCancelConfirm && appointmentToCancel && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15,23,42,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2000,
+          }}
+          onClick={handleCancelCancel}
+        >
+          <div
+            style={{
+              width: '400px',
+              maxWidth: '90%',
+              background: '#fff',
+              borderRadius: '16px',
+              boxShadow: '0 20px 60px rgba(15,23,42,0.2)',
+              padding: '24px',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ marginBottom: '12px', color: '#111827' }}>Confirm Cancellation</h3>
+            <p style={{ marginBottom: '20px', color: '#4b5563', fontSize: '14px' }}>
+              Are you sure you want to cancel this appointment for <strong>{appointmentToCancel.pet_name}</strong>?
+            </p>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={handleCancelCancel}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  border: '1px solid #d1d5db',
+                  background: '#fff',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                No, Keep It
+              </button>
+              <button
+                type="button"
+                onClick={handleCancelConfirm}
+                disabled={cancellingId === appointmentToCancel.appointment_id}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: '#ef4444',
+                  color: '#fff',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                {cancellingId === appointmentToCancel.appointment_id ? 'Cancelling...' : 'Yes, Cancel'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notification Modal */}
       {notification && (
         <div
           style={{
@@ -152,6 +237,7 @@ function AppointmentSection() {
             justifyContent: 'center',
             zIndex: 2000,
           }}
+          onClick={() => setNotification(null)}
         >
           <div
             style={{
@@ -162,6 +248,7 @@ function AppointmentSection() {
               boxShadow: '0 20px 60px rgba(15,23,42,0.2)',
               padding: '20px',
             }}
+            onClick={(e) => e.stopPropagation()}
           >
             <h3 style={{ marginBottom: '8px', color: '#111827' }}>{notification.title}</h3>
             <p style={{ marginBottom: '16px', color: '#4b5563', fontSize: '14px' }}>

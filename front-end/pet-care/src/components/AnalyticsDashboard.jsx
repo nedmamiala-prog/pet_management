@@ -192,7 +192,7 @@ const AnalyticsDashboard = () => {
         <section className="analytics-dashboard">
           <div className="dashboard-header">
          
-            <h1>PetCare Analytics</h1>
+            <h2>PetCare Analytics</h2>
             <p>Appointment Statistics Overview</p>
             <span className="status-badge ready">{statusMessage}</span>
           </div>
@@ -210,9 +210,7 @@ const AnalyticsDashboard = () => {
                 </button>
               ))}
             </div>
-            <button type="button" className="export-btn">
-              Export Report
-            </button>
+            
           </div>
 
           <div className="metrics-grid">{metricCards}</div>
