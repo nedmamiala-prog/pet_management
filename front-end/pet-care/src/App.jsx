@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
+import './styles/responsive.css';
 import Home from './components/Home';
 import Login from './components/Login';
 import Signin from './components/Signin';

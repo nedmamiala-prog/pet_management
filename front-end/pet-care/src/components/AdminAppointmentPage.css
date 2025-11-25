@@ -12,6 +12,58 @@
   margin-left: 0;
 }
 
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .grid-container-admin {
+    grid-template-columns: 1fr;
+  }
+  
+  .grid-container-admin .main-container {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .cancel-modal {
+    width: 90%;
+    max-width: 400px;
+    margin: 1rem;
+  }
+  
+  .admin-appointment-wrapper {
+    padding: 1rem;
+  }
+  
+  .appointment-table {
+    overflow-x: auto;
+  }
+  
+  .appointment-table table {
+    min-width: 600px;
+  }
+  
+  .actions-td {
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .cancel-modal {
+    width: 95%;
+    padding: 1rem;
+  }
+  
+  .admin-appointment-wrapper {
+    padding: 0.5rem;
+  }
+  
+  .top-row {
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
+
 
 
 .cancel-modal-overlay {
