@@ -208,10 +208,10 @@ function UserDashboard() {
           </div>
 
           <nav className="desktop-nav">
-            <a href="/UserDashboard" className="nav-link">Home</a>
-            <a href="/appointment" className="nav-link">Services</a>
-            <a href="/appointment" className="nav-link">Appointment</a>
-            <a href="/UserDashboard" className="nav-link">About</a>
+            <a href="#/UserDashboard" className="nav-link">Home</a>
+            <a href="#/appointment" className="nav-link">Services</a>
+            <a href="#/appointment" className="nav-link">Appointment</a>
+            <a href="#/UserDashboard" className="nav-link">About</a>
           </nav>
 
           <div className="profile" style={{ position: 'relative' }}>
@@ -259,7 +259,7 @@ function UserDashboard() {
           <div className="mobile-menu">
             <a href="/UserDashboard" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Home</a>
             <a href="/profile" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Profile</a>
-            <a href="/appointment" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Services</a>
+            <a href="#/appointment" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Services</a>
             <a href="/billing" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Billing</a>
             <div className="prof" onClick={() => navigate('/profile')} style={{ backgroundImage: `url(${profile})` }}></div>
           </div>

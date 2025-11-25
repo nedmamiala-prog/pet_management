@@ -79,7 +79,7 @@ function Home() {
           <div className="mobile-menu">
             <a href="/" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Home</a>
             <a href="/" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>About</a>
-            <a href="/appointment" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Services</a>
+            <a href="#/appointment" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Services</a>
             <a href="/login" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Login</a>
             <button className="mobile-login-btn" onClick={() => navigate('/login')}>Login</button>
           </div>

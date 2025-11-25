@@ -198,10 +198,10 @@ function UserDashboard() {
 
           <nav className="desktop-nav">
             <a href="/" className="nav-link">Home</a>
-            <a href="/appointment" className="nav-link">Services</a>
+            <a href="#/appointment" className="nav-link">Services</a>
             <a href="/UserDashboard" className="nav-link">Dashboard</a>
             <a
-              href="/appointment"
+              href="#/appointment"
               className="nav-link"
               onClick={(e) => {
                 e.preventDefault();
@@ -285,7 +285,7 @@ function UserDashboard() {
           <div className="mobile-menu">
             <a href="/" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Home</a>
             <a href="/UserDashboard" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Dashboard</a>
-            <a href="/appointment" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Services</a>
+            <a href="#/appointment" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Services</a>
             <a href="/profile" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Profile</a>
           </div>
         )}
