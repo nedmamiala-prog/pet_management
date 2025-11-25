@@ -1,14 +1,6 @@
 {
-  "builds": [
-    {
-      "src": "front-end/pet-care/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    }
-  ],
-  "rewrites": [
-    {"source": "/(.*)", "destination": "/front-end/pet-care/dist/index.html"}
-  ]
+  "rewrites": {
+    "source": "/api/:path*",
+    "destination": "https://pet-management-ro9c.onrender.com/:path*"
+  }
 }
