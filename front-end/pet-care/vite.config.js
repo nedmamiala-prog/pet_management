@@ -7,7 +7,7 @@ plugins: [react()],
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'https://pet-management-ro9c.onrender.com',
         changeOrigin: true,
         secure: false,
       },

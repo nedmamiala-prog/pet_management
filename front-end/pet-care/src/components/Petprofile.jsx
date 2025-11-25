@@ -192,7 +192,7 @@ function PetProfile() {
               <div 
                 className="pet-avatar"
                 style={{
-                  backgroundImage: pet.profile_picture ? `url(http://localhost:5000${pet.profile_picture})` : 'none',
+                  backgroundImage: pet.profile_picture ? `url(https://pet-management-ro9c.onrender.com${pet.profile_picture})` : 'none',
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
                   fontSize: pet.profile_picture ? '0' : 'inherit'
@@ -296,7 +296,7 @@ function PetProfile() {
                 <div 
                   className="pet-avatar-large"
                   style={{
-                    backgroundImage: selectedPet.profile_picture ? `url(http://localhost:5000${selectedPet.profile_picture})` : 'none',
+                    backgroundImage: selectedPet.profile_picture ? `url(https://pet-management-ro9c.onrender.com${selectedPet.profile_picture})` : 'none',
                     backgroundSize: 'cover',
                     backgroundPosition: 'center'
                   }}

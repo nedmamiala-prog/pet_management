@@ -277,7 +277,7 @@ function UserDashboard() {
                 className="profile-avatar" 
                 style={{ 
                   backgroundImage: currentUser?.profile_picture 
-                    ? `url(http://localhost:5000${currentUser.profile_picture})` 
+                    ? `url(https://pet-management-ro9c.onrender.com${currentUser.profile_picture})` 
                     : `url(${profile})`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center'
