@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:5000/api';
+const BASE_URL = 'https://pet-management-ro9c.onrender.com/api';
 
 export async function updateProfilePicture(file) {
   try {
