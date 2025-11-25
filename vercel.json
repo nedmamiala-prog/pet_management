@@ -1,1 +1,7 @@
-{"rewrites": [{"source": "/(.*)", "destination": "/index.html"}]}
+{
+  "buildCommand": "cd front-end/pet-care && npm run build",
+  "outputDirectory": "front-end/pet-care/dist",
+  "rewrites": [
+    {"source": "/(.*)", "destination": "/index.html"}
+  ]
+}
