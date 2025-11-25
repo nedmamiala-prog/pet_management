@@ -9,7 +9,7 @@ const safeQuery = (sql) => {
 };
 
 const runMigrations = () => {
-  // Use safer column addition without IF NOT EXISTS
+
   const addColumnSafely = (table, column, definition) => {
     const checkSql = `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
                       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '${table}' AND COLUMN_NAME = '${column}'`;
