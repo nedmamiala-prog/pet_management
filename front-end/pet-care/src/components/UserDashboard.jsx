@@ -197,10 +197,11 @@ function UserDashboard() {
           </div>
 
           <nav className="desktop-nav">
-            <a href="#home" className="nav-link">Home</a>
-            <a href="#services" className="nav-link">Services</a>
+            <a href="/" className="nav-link">Home</a>
+            <a href="/appointment" className="nav-link">Services</a>
+            <a href="/UserDashboard" className="nav-link">Dashboard</a>
             <a
-              href="#appointment"
+              href="/appointment"
               className="nav-link"
               onClick={(e) => {
                 e.preventDefault();
@@ -209,7 +210,7 @@ function UserDashboard() {
             >
               Appointment
             </a>
-            <a href="#about" className="nav-link">About</a>
+            <a href="/UserDashboard" className="nav-link">Dashboard</a>
           </nav>
 
           <div className="profile">
@@ -282,10 +283,10 @@ function UserDashboard() {
 
         {isMenuOpen && (
           <div className="mobile-menu">
-            <a href="#home" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Home</a>
-            <a href="#about" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>About</a>
-            <a href="#services" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Services</a>
-            <a href="#contact" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Contact</a>
+            <a href="/" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Home</a>
+            <a href="/UserDashboard" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Dashboard</a>
+            <a href="/appointment" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Services</a>
+            <a href="/profile" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Profile</a>
           </div>
         )}
       </header>
