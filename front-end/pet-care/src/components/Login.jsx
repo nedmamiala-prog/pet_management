@@ -144,7 +144,7 @@ export default function Login() {
           <div className="form-footer">
             <p>
               Don’t have an account?{" "}
-              <a href="/Signin" className="link">Sign up</a>
+              <a href="/signin" className="link">Sign up</a>
             </p>
           </div>
         </div>
