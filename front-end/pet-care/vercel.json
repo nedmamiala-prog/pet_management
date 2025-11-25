@@ -1,10 +1,5 @@
 {
-  "buildCommand": "npm install && npm run build",
-  "outputDirectory": "dist", 
-  "framework": "vite",
-  "rewrites": [
-    {"source": "/((?!api|_next/static|_next/image|assets).*)", "destination": "/index.html"}
-  ],
-  "cleanUrls": true,
-  "trailingSlash": false
+  "routes": [
+    { "src": "/.*", "dest": "/index.html" }
+  ]
 }
