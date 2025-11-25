@@ -7,7 +7,7 @@ import { User, Heart, Calendar, FileText, Mail, Edit2, X } from 'lucide-react';
 import { getUser } from '../api/authApi'; 
 import { updateUserProfile } from '../api/userApi';
 import { updateProfilePicture } from '../api/profileApi';
-import UserPet from './UserPet';
+import UserPet from './userPet';
 import AppointmentSection from './UserAppointment';
 import Notification from './Notification';
 import { getUserNotifications } from '../api/notificationApi';
