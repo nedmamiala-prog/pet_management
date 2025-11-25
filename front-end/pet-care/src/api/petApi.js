@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:5000/pets';
+const BASE_URL = 'https://pet-management-ro9c.onrender.com/pets';
 
 export async function addPet(petData) {
 

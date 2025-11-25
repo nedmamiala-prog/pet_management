@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:5000/appointments';
+const BASE_URL = 'https://pet-management-ro9c.onrender.com/appointments';
 
 
 export async function createAppointment({ pet_id, date, time, service, notes }) {

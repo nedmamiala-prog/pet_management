@@ -350,7 +350,7 @@ export default function PetRecords() {
                         className="pet-img-box"
                         style={{
                           backgroundImage: p.profile_picture
-                            ? `url(http://localhost:5000${p.profile_picture})`
+                            ? `url(https://pet-management-ro9c.onrender.com${p.profile_picture})`
                             : 'none',
                           backgroundSize: 'cover',
                           backgroundPosition: 'center',
@@ -392,7 +392,7 @@ export default function PetRecords() {
                     className="modal-image"
                     style={{
                       backgroundImage: selectedPet.profile_picture
-                        ? `url(http://localhost:5000${selectedPet.profile_picture})`
+                        ? `url(https://pet-management-ro9c.onrender.com${selectedPet.profile_picture})`
                         : 'none',
                       backgroundSize: 'cover',
                       backgroundPosition: 'center',

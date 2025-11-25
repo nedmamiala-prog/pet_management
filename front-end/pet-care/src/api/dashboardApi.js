@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:5000/dashboard';
+const BASE_URL = 'https://pet-management-ro9c.onrender.com/dashboard';
 
 export async function getDashboardStats() {
   try {
