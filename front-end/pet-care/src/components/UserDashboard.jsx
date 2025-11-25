@@ -55,7 +55,7 @@ function UserDashboard() {
 
   // Handle modal open/close by hash
   useEffect(() => {
-    if (location.hash === '#appointment') {
+    if (location.hash === '#/appointment') {
       setShowModal(true);
     } else {
       setShowModal(false);
@@ -63,14 +63,14 @@ function UserDashboard() {
   }, [location.hash]);
 
   const openAppointment = () => {
-    if (location.hash !== '#appointment') {
-      navigate('#appointment');
+    if (location.hash !== '#/appointment') {
+      navigate('/appointment');
     }
     setShowModal(true);
   };
 
   const closeAppointment = () => {
-    navigate('#home');
+    navigate('/');
     setShowModal(false);
   };
 
