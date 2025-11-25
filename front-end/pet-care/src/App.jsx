@@ -1,7 +1,6 @@
 import React from 'react';
-import { Routes, Route, Navigate, HashRouter } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
-import './styles/responsive.css';
 import Home from './components/Home';
 import Login from './components/Login';
 import Signin from './components/Signin';
@@ -26,7 +25,7 @@ const PrivateRoute = ({ element }) => {
 
 function App() {
   return (
-    <HashRouter>
+    
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
@@ -43,7 +42,7 @@ function App() {
         <Route path="/admin/pet-records" element={<PrivateRoute element={<PetRecords />} />} />
         <Route path="/pet-profile" element={<PrivateRoute element={<Petprofile />} />} />
       </Routes>
-    </HashRouter>
+
   );
 }
 
