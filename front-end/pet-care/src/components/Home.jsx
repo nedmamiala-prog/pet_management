@@ -60,8 +60,8 @@ function Home() {
 
           <nav className="desktop-nav">
           <a href="/" className="nav-link">Home</a>
-          <a href="/appointment" className="nav-link">Services</a>
-          <a href="/appointment" className="nav-link">Appointment</a>
+          <a href="/" className="nav-link">Services</a>
+          <a href="/" className="nav-link">Appointment</a>
           <a href="/" className="nav-link">About</a>
 
           </nav>
