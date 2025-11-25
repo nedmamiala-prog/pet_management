@@ -1,6 +1,6 @@
 {
-  "buildCommand": "cd front-end/pet-care && npm install && npm run build",
-  "outputDirectory": "front-end/pet-care/dist", 
+  "buildCommand": "npm install && npm run build",
+  "outputDirectory": "dist", 
   "framework": "vite",
   "rewrites": [
     {"source": "/((?!api|_next/static|_next/image|assets).*)", "destination": "/index.html"}
