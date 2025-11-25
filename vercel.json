@@ -1,6 +1,13 @@
 {
-  "buildCommand": "cd front-end/pet-care && npm run build",
-  "outputDirectory": "front-end/pet-care/dist",
+  "builds": [
+    {
+      "src": "front-end/pet-care/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    }
+  ],
   "rewrites": [
     {"source": "/(.*)", "destination": "/index.html"}
   ]
