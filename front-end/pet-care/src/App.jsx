@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate, HashRouter } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import Home from './components/Home';
 import Login from './components/Login';
@@ -25,24 +25,22 @@ const PrivateRoute = ({ element }) => {
 
 function App() {
   return (
-    <HashRouter>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signin" element={<Signin />} />
-        <Route path="/appointment" element={<Appointment />} />
-        <Route path="/UserDashboard" element={<PrivateRoute element={<UserDashboard />} />} />
-        <Route path="/Admin" element={<PrivateRoute element={<AdminHome />} />} />
-        <Route path="/profile" element={<PrivateRoute element={<Profile />} />} />
-        <Route path="/logout" element={<Logout />} />
-        <Route path="/auth/callback" element={<AuthCallback />} />
-        <Route path="/admin/appointments" element={<PrivateRoute element={<AdminAppointmentPage />} />} /> 
-        <Route path="/admin/billing" element={<PrivateRoute element={<AdminBilling />} />} />
-        <Route path="/admin/analytics" element={<PrivateRoute element={<AnalyticsDashboard />} />} />
-        <Route path="/admin/pet-records" element={<PrivateRoute element={<PetRecords />} />} />
-        <Route path="/pet-profile" element={<PrivateRoute element={<Petprofile />} />} />
-      </Routes>
-    </HashRouter>
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/signin" element={<Signin />} />
+      <Route path="/appointment" element={<Appointment />} />
+      <Route path="/UserDashboard" element={<PrivateRoute element={<UserDashboard />} />} />
+      <Route path="/Admin" element={<PrivateRoute element={<AdminHome />} />} />
+      <Route path="/profile" element={<PrivateRoute element={<Profile />} />} />
+      <Route path="/logout" element={<Logout />} />
+      <Route path="/auth/callback" element={<AuthCallback />} />
+      <Route path="/admin/appointments" element={<PrivateRoute element={<AdminAppointmentPage />} />} /> 
+      <Route path="/admin/billing" element={<PrivateRoute element={<AdminBilling />} />} />
+      <Route path="/admin/analytics" element={<PrivateRoute element={<AnalyticsDashboard />} />} />
+      <Route path="/admin/pet-records" element={<PrivateRoute element={<PetRecords />} />} />
+      <Route path="/pet-profile" element={<PrivateRoute element={<Petprofile />} />} />
+    </Routes>
   );
 }
 
