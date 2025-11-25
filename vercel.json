@@ -1,6 +1,5 @@
 {
-  "rewrites": {
-    "source": "/api/:path*",
-    "destination": "https://pet-management-ro9c.onrender.com/:path*"
-  }
+  "rewrites":[
+    {"source": "/(.*)", "destination": "/"}
+  ]
 }
