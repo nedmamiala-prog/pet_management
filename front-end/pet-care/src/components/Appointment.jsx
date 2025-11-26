@@ -39,6 +39,7 @@ export default function Appointment({ closeModal }) {
   const [availableSlots, setAvailableSlots] = useState({}); 
   const [loadingSlots, setLoadingSlots] = useState({}); 
   const [notification, setNotification] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
 
   useEffect(() => {
@@ -260,6 +261,10 @@ useEffect(() => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Guard against double submits (fast double-click, Enter + click, etc.)
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
     // Validate that we have at least one pet selected
     const allPetIds = [...selectedPetIds, ...newPets.map(p => `new-${p.tempId}`)];
     if (allPetIds.length === 0) {
@@ -302,13 +307,14 @@ useEffect(() => {
       errorMessage = 'Please complete all required fields.';
     }
 
-    if (hasError) {
+      if (hasError) {
       setNotification({
         title: 'Incomplete details',
         message: errorMessage,
       });
-      return;
-    }
+        setIsSubmitting(false);
+        return;
+      }
 
     try {
       const appointmentPromises = [];
@@ -399,6 +405,8 @@ useEffect(() => {
         title: 'Booking failed',
         message: errorMessage,
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -432,22 +440,25 @@ useEffect(() => {
         </div>
 
  
-        <form className="form-panel" onSubmit={(e) => {
-          e.preventDefault();
-          // Only submit if we're on step 4 and the submit button was clicked
-          if (step === 4) {
-            handleSubmit(e);
-          }
-        }} onKeyDown={(e) => {
-          // Prevent form submission on Enter key except for submit button
-          if (e.key === 'Enter' && e.target.type !== 'textarea' && e.target.type !== 'submit' && e.target.type !== 'button') {
-            e.preventDefault();
-            // Move to next step if not on last step
-            if (step < 4) {
-              handleNext();
+        <form
+          className="form-panel"
+          onSubmit={handleSubmit}
+          onKeyDown={(e) => {
+            // Prevent Enter from submitting the form from text inputs.
+            if (
+              e.key === 'Enter' &&
+              e.target.type !== 'textarea' &&
+              e.target.type !== 'submit' &&
+              e.target.type !== 'button'
+            ) {
+              e.preventDefault();
+              // Move to next step if not on last step
+              if (step < 4) {
+                handleNext();
+              }
             }
-          }
-        }}>
+          }}
+        >
        
           {step === 1 && (
             <>
@@ -916,7 +927,7 @@ useEffect(() => {
                 Next Step →
               </button>
             ) : (
-              <button type="submit" className="finish-btn">
+              <button type="submit" className="finish-btn" disabled={isSubmitting}>
                 Submit Appointment ✔
               </button>
             )}

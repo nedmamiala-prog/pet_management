@@ -65,9 +65,13 @@ const Billing = {
 
   getByUser: (user_id, callback) => {
     const sql = `
-      SELECT * FROM billing
-      WHERE user_id = ?
-      ORDER BY created_at DESC
+      SELECT b.*
+      FROM billing b
+      JOIN appointment a ON b.appointment_id = a.appointment_id
+      WHERE b.user_id = ?
+        AND a.status = 'Accepted'
+        AND b.status != 'void'
+      ORDER BY b.created_at DESC
     `;
     db.query(sql, [user_id], callback);
   },
