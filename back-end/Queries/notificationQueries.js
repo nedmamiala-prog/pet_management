@@ -1,12 +1,32 @@
 const db = require('../config/db');
 
+const MAX_MESSAGE_LENGTH = 255;
+
+const buildPayload = ({ message, type, metadata }) =>
+  JSON.stringify({
+    message,
+    type,
+    metadata: metadata || null,
+  });
+
 const serializePayload = ({ message, type = 'info', metadata = null }) => {
+  const safeMessage = typeof message === 'string' ? message : String(message || '');
+
   try {
-    return JSON.stringify({
-      message,
-      type,
-      metadata: metadata || null,
-    });
+    // 1) Try full payload (message + type + metadata)
+    let payload = buildPayload({ message: safeMessage, type, metadata });
+    if (payload.length <= MAX_MESSAGE_LENGTH) return payload;
+
+    // 2) Try without metadata
+    payload = buildPayload({ message: safeMessage, type, metadata: null });
+    if (payload.length <= MAX_MESSAGE_LENGTH) return payload;
+
+    // 3) Truncate message and drop metadata
+    const truncated =
+      safeMessage.length > MAX_MESSAGE_LENGTH - 20
+        ? `${safeMessage.slice(0, MAX_MESSAGE_LENGTH - 20)}…`
+        : safeMessage;
+    return buildPayload({ message: truncated, type, metadata: null });
   } catch (error) {
     console.error('Notification payload serialization error:', error);
     return safeMessage.slice(0, MAX_MESSAGE_LENGTH);
@@ -59,7 +79,7 @@ const Notification = {
   },
 
   markAsRead: (notification_id, user_id, callback) => {
-    const sql = "UPDATE notification SET status = 'read' WHERE notification_id = ? AND user_id = ?";
+    const sql = "UPDATE notification SET status = 'read' WHERE notif_id = ? AND user_id = ?";
     db.query(sql, [notification_id, user_id], callback);
   },
 };
