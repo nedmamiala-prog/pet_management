@@ -11,7 +11,7 @@ function Sidebar() {
     <aside id='sidebar'>
       <div className= 'sidebar-title'>
         <div className= 'sidebar-brand'>
-            <BsHeartFill className='icon_header'/> PetCare.
+            <div className='icon_header'/> 🐾PetCare.
         </div>
 
 

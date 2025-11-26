@@ -59,10 +59,11 @@ function Home() {
 
 
           <nav className="desktop-nav">
-            <a href="#home" className="nav-link">Home</a>
-            <a href="#services" className="nav-link">Services</a>
-            <a href="#appointment" className="nav-link">Appointment</a>
-            <a href="#about" className="nav-link">About</a>
+          <a href="#home" className="nav-link">Home</a>
+          <a href="#services" className="nav-link">Services</a>
+          <a href="#appointment" className="nav-link">Appointment</a>
+          <a href="#about" className="nav-link">About</a>
+
           </nav>
 
 
@@ -151,7 +152,7 @@ function Home() {
             <br />
             appointment status.
           </p>
-         <button className="book-button" onClick={() => navigate('/appointment')}>
+         <button className="book-button" onClick={() => navigate('/login')}>
         Book Appointment
       </button>
 

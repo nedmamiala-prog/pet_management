@@ -2,7 +2,6 @@
   width: 100%;
   border-collapse: collapse;
   table-layout: auto; /* important! */
-  
 }
 
 .billing-table th,
@@ -59,6 +58,39 @@
 
 .billing-table th:nth-child(5),
 .billing-table td:nth-child(5) {
-  width: 150px; /* or whatever suits your button size */
+  width: 150px;
   white-space: nowrap;
+}
+
+/* RESPONSIVE MAGIC – ONLY ADDED THIS BLOCK */
+@media (max-width: 768px) {
+  .billing-table {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .billing-table table {
+    min-width: 600px; /* forces horizontal scroll only when really needed */
+  }
+
+  /* Optional: make the Action column sticky so button is always visible */
+  .billing-table th:last-child,
+  .billing-table td:last-child {
+    position: sticky;
+    right: 0;
+    background: white;
+    box-shadow: -4px 0 10px rgba(0,0,0,0.05);
+  }
+
+  .billing-table td:last-child {
+    background: #ffffff;
+  }
+}
+
+@media (max-width: 480px) {
+  .billing-table td .action-btn {
+    width: 100%;
+    padding: 10px;
+    font-size: 13px;
+  }
 }
