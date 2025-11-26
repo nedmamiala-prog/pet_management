@@ -56,7 +56,7 @@ export default function NotificationBell({ showProfileAvatar = true, showLogoutB
         >
           {notifications.length > 0 && (
             <span className="notif-badge">
-              {notifications.length > 9 ? '9+' : notifications.length}
+            
             </span>
           )}
         </div>
