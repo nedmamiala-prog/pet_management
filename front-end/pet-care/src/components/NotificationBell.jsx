@@ -56,7 +56,7 @@ export default function NotificationBell({ showProfileAvatar = true, showLogoutB
         >
           {notifications.length > 0 && (
             <span className="notif-badge">
-              {notifications.length}
+              {notifications.length > 9 ? '9+' : notifications.length}
             </span>
           )}
         </div>
@@ -75,14 +75,16 @@ export default function NotificationBell({ showProfileAvatar = true, showLogoutB
             backgroundColor: '#fff',
             boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
             borderRadius: '8px',
-            padding: '8px 0',
+            padding: 0,
             zIndex: 1000,
+            overflow: 'hidden',
           }}
         >
           <div
             style={{
-              padding: '8px 12px',
-              borderBottom: '1px solid #eee',
+              background: 'linear-gradient(90deg, #2563eb, #1d4ed8)',
+              color: '#fff',
+              padding: '10px 12px',
               fontWeight: 600,
               fontSize: '14px',
             }}
@@ -112,6 +114,7 @@ export default function NotificationBell({ showProfileAvatar = true, showLogoutB
                   borderBottom: '1px solid #f3f3f3',
                   fontSize: '13px',
                   cursor: 'default',
+                  backgroundColor: '#fff',
                 }}
               >
                 <div style={{ fontWeight: 500, marginBottom: '2px' }}>
