@@ -53,7 +53,6 @@ function UserDashboard() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Handle modal open/close by hash
   useEffect(() => {
     if (location.hash === '#/appointment') {
       setShowModal(true);
@@ -198,8 +197,7 @@ function UserDashboard() {
 
           <nav className="desktop-nav">
             <a href="/" className="nav-link">Home</a>
-            <a href="#/appointment" className="nav-link">Services</a>
-            <a href="/UserDashboard" className="nav-link">Dashboard</a>
+            <a href="#/services" className="nav-link">Services</a>
             <a
               href="#/appointment"
               className="nav-link"
@@ -210,7 +208,6 @@ function UserDashboard() {
             >
               Appointment
             </a>
-            <a href="/UserDashboard" className="nav-link">Dashboard</a>
           </nav>
 
           <div className="profile">
