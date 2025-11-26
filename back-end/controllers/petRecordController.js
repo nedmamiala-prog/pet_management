@@ -1,30 +1,65 @@
 const PetRecord = require('../Queries/petRecordQueries');
+const Pet = require('../Queries/petQueries');
+const { notifyPetRecordAdded } = require('../services/notificationService');
 
-exports.createRecord = (req, res) => {
+const getPetById = (pet_id) =>
+  new Promise((resolve, reject) => {
+    Pet.getById(pet_id, (err, rows) => {
+      if (err) return reject(err);
+      resolve(rows?.[0] || null);
+    });
+  });
+
+const createPetRecord = (pet_id, service_type, data = {}) =>
+  new Promise((resolve, reject) => {
+    PetRecord.create(pet_id, service_type, data, (err, result) => {
+      if (err) return reject(err);
+      resolve(result);
+    });
+  });
+
+exports.createRecord = async (req, res) => {
   const { pet_id, service_type, data } = req.body;
-
   if (!pet_id || !service_type) {
     return res.status(400).json({ message: "Pet ID and service type are required" });
   }
 
-  PetRecord.create(pet_id, service_type, data || {}, (err, result) => {
-    if (err) {
-      console.error("Pet record insert error:", err);
-      return res.status(500).json({
-        message: "Error adding pet record",
-        error: err
-      });
+  const recordData = data && typeof data === 'object' ? data : {};
+
+  try {
+    const pet = await getPetById(pet_id);
+    if (!pet) {
+      return res.status(404).json({ message: "Pet not found" });
     }
 
-    res.status(201).json({
+    const result = await createPetRecord(pet_id, service_type, recordData);
+    const responsePayload = {
       success: true,
       message: "Pet record added successfully",
       record: {
         record_id: result.insertId,
-        pet_id
-      }
+        pet_id,
+      },
+    };
+    res.status(201).json(responsePayload);
+
+    notifyPetRecordAdded({
+      user_id: pet.user_id,
+      pet_id,
+      pet_name: pet.pet_name,
+      service_type,
+      record_id: result.insertId,
+      record_data: recordData,
+    }).catch((notifyErr) => {
+      console.error('Pet record notification error:', notifyErr);
     });
-  });
+  } catch (err) {
+    console.error("Pet record insert error:", err);
+    res.status(500).json({
+      message: "Error adding pet record",
+      error: err,
+    });
+  }
 };
 
 exports.getPetRecords = (req, res) => {

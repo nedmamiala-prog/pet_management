@@ -1,5 +1,7 @@
 const paypal = require("@paypal/checkout-server-sdk");
 const createPayPalClient = require("../apiPaypal/paypal");
+const { notifyBillingUpdate } = require('../services/notificationService');
+const Billing = require("../Queries/billingQueries");
 
 exports.createOrder = async (req, res) => {
   const { amount, billingId } = req.body;
@@ -43,18 +45,13 @@ exports.createOrder = async (req, res) => {
 
   
     if (billingId) {
-      try {
-        const Billing = require("../Queries/billingQueries");
-        Billing.setPaypalOrderId(billingId, order.result.id, (err) => {
-          if (err) {
-            console.error('Failed to persist paypal_order_id for billing', billingId, err);
-          } else {
-            console.log('Persisted paypal_order_id for billing', billingId, order.result.id);
-          }
-        });
-      } catch (persistErr) {
-        console.error('Error while saving paypal_order_id to billing:', persistErr);
-      }
+      Billing.setPaypalOrderId(billingId, order.result.id, (err) => {
+        if (err) {
+          console.error('Failed to persist paypal_order_id for billing', billingId, err);
+        } else {
+          console.log('Persisted paypal_order_id for billing', billingId, order.result.id);
+        }
+      });
     }
 
     res.json({ id: order.result.id, approvalUrl });
@@ -88,28 +85,26 @@ exports.captureOrder = async (req, res) => {
     console.log('PayPal capture response:', JSON.stringify(capture.result, null, 2));
 
  
-    let extractedBillingId = capture.result.purchase_units && capture.result.purchase_units[0] && capture.result.purchase_units[0].custom_id;
+    let extractedBillingId =
+      capture.result.purchase_units &&
+      capture.result.purchase_units[0] &&
+      capture.result.purchase_units[0].custom_id;
     if (!extractedBillingId) {
       extractedBillingId = billingId; 
     }
 
   
     if (!extractedBillingId) {
-      try {
-        const Billing = require("../Queries/billingQueries");
-        const paypalOrderToLookup = orderID || capture.result.id;
-        const rows = await new Promise((resolve, reject) => {
-          Billing.getByPaypalOrderId(paypalOrderToLookup, (err, results) => {
-            if (err) return reject(err);
-            resolve(results || []);
-          });
+      const paypalOrderToLookup = orderID || capture.result.id;
+      const rows = await new Promise((resolve, reject) => {
+        Billing.getByPaypalOrderId(paypalOrderToLookup, (err, results) => {
+          if (err) return reject(err);
+          resolve(results || []);
         });
-        if (rows && rows.length) {
-          extractedBillingId = rows[0].billing_id;
-          console.log('Found billing by paypal_order_id:', extractedBillingId);
-        }
-      } catch (lookupErr) {
-        console.error('Error looking up billing by paypal_order_id:', lookupErr);
+      });
+      if (rows && rows.length) {
+        extractedBillingId = rows[0].billing_id;
+        console.log('Found billing by paypal_order_id:', extractedBillingId);
       }
     }
 
@@ -120,23 +115,35 @@ exports.captureOrder = async (req, res) => {
     const captureId = capture.result.purchase_units && capture.result.purchase_units[0] && capture.result.purchase_units[0].payments && capture.result.purchase_units[0].payments.captures && capture.result.purchase_units[0].payments.captures[0] && capture.result.purchase_units[0].payments.captures[0].id;
 
     if (extractedBillingId) {
+      await new Promise((resolve, reject) => {
+        Billing.markPaid(extractedBillingId, captureId || capture.result.id, (err) => {
+          if (err) {
+            console.error('Failed to mark billing paid after capture:', err);
+            return reject(err);
+          }
+          console.log('Billing marked as paid:', extractedBillingId);
+          resolve();
+        });
+      });
+
       try {
-        const Billing = require("../Queries/billingQueries");
-        
-        await new Promise((resolve, reject) => {
-          Billing.markPaid(extractedBillingId, captureId || capture.result.id, (err) => {
-            if (err) {
-              console.error('Failed to mark billing paid after capture:', err);
-              reject(err);
-            } else {
-              console.log('Billing marked as paid:', extractedBillingId);
-              resolve();
-            }
+        const billingRecord = await new Promise((resolve, reject) => {
+          Billing.getById(extractedBillingId, (err, result) => {
+            if (err) return reject(err);
+            resolve(result);
           });
         });
-      } catch (innerErr) {
-        console.error('Error updating billing after capture:', innerErr);
 
+        if (billingRecord) {
+          await notifyBillingUpdate({
+            user_id: billingRecord.user_id,
+            amount: billingRecord.amount,
+            status: 'paid',
+            invoice_id: billingRecord.billing_id,
+          });
+        }
+      } catch (notifyErr) {
+        console.error('PayPal payment notification error:', notifyErr);
       }
     } else {
       console.warn('No billing ID found in capture response, request body, or DB mapping. Payment captured but billing not marked.');

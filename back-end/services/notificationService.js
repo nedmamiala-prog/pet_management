@@ -24,12 +24,33 @@ const describeAppointment = ({ pet_name, service_name }) => {
   return 'your appointment';
 };
 
+const summarizeRecordData = (data = {}) => {
+  if (!data || typeof data !== 'object') return '';
+  const summaryFields = [
+    ['diagnosis', 'Diagnosis'],
+    ['status', 'Status'],
+    ['medication', 'Medication'],
+    ['notes', 'Notes'],
+    ['vaccineType', 'Vaccine'],
+    ['groomType', 'Grooming'],
+    ['reminderType', 'Reminder'],
+  ];
+
+  const parts = summaryFields
+    .map(([key, label]) => (data[key] ? `${label}: ${data[key]}` : null))
+    .filter(Boolean);
+
+  if (!parts.length) return '';
+  return ` ${parts.slice(0, 2).join(' | ')}`;
+};
+
 const EMAIL_SUPPORTED_TYPES = new Set([
   'appointment_reminder_24h',
   'appointment_reminder_3h',
   'appointment_accepted',
   'appointment_cancelled',
   'payment_due',
+  'pet_record_added',
 ]);
 
 const scheduleReminder = ({ user_id, appointment_id, type, send_at, message, metadata = {} }) =>
@@ -76,6 +97,9 @@ const getEmailSubjectForType = (type) => {
   }
   if (type === 'payment_due') {
     return 'Payment Due';
+  }
+  if (type === 'pet_record_added') {
+    return 'Pet Record Update';
   }
   return 'Notification';
 };
@@ -180,11 +204,11 @@ const notifyAppointmentStatus = async ({
   if (status === 'Accepted') {
     message = `Your ${appointmentLabel}${dateText} has been accepted.`;
   } else if (status === 'Cancelled') {
+    const reasonText = reason ? ` Reason: ${reason}.` : '';
     if (initiator === 'user') {
-      message = `You cancelled the ${appointmentLabel}${dateText}.`;
+      message = `You cancelled ${appointmentLabel}${dateText}.${reasonText}`.trim();
     } else {
-      const reasonText = reason ? ` Reason: ${reason}.` : '';
-      message = `The clinic cancelled your ${appointmentLabel}${dateText}.${reasonText}`.trim();
+      message = `Your ${appointmentLabel}${dateText} was cancelled by the clinic.${reasonText}`.trim();
     }
   } else {
     message = `Appointment status updated to ${status} for ${appointmentLabel}${dateText}.`;
@@ -229,6 +253,27 @@ const notifyPaymentRequest = async ({ user_id, amount, appointment_id }) => {
   });
 };
 
+const notifyPetRecordAdded = async ({ user_id, pet_id, pet_name, service_type, record_id, record_data }) => {
+  if (!user_id) return;
+  const petLabel = pet_name || 'your pet';
+  const serviceLabel = service_type || 'new record';
+  const summary = summarizeRecordData(record_data);
+  const message = `A new ${serviceLabel} record was added for ${petLabel}.${summary}`;
+
+  await createImmediateNotification({
+    user_id,
+    type: 'pet_record_added',
+    message,
+    metadata: {
+      pet_id,
+      pet_name,
+      service_type,
+      record_id,
+      record_data: record_data || {},
+    },
+  });
+};
+
 const schedulePaymentDueNotification = async ({ user_id, appointment_id, amount, date_time }) => {
   const appointmentDate = safeDate(date_time);
   if (!appointmentDate) {
@@ -264,6 +309,7 @@ module.exports = {
   notifyAppointmentStatus,
   notifyBillingUpdate,
   notifyPaymentRequest,
+  notifyPetRecordAdded,
   schedulePaymentDueNotification,
   createImmediateNotification,
   cancelScheduledReminders,

@@ -77,6 +77,14 @@ const Billing = {
     db.query(sql, [appointment_id], callback);
   },
 
+  getById: (billing_id, callback) => {
+    const sql = `SELECT * FROM billing WHERE billing_id = ? LIMIT 1`;
+    db.query(sql, [billing_id], (err, rows) => {
+      if (err) return callback(err);
+      callback(null, rows && rows[0] ? rows[0] : null);
+    });
+  },
+
   voidByAppointment: (appointment_id, callback) => {
     const sql = `
       UPDATE billing

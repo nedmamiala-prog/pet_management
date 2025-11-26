@@ -9,7 +9,7 @@ const serializePayload = ({ message, type = 'info', metadata = null }) => {
     });
   } catch (error) {
     console.error('Notification payload serialization error:', error);
-    return message;
+    return safeMessage.slice(0, MAX_MESSAGE_LENGTH);
   }
 };
 
