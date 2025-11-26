@@ -197,7 +197,7 @@ function UserDashboard() {
 
           <nav className="desktop-nav">
             <a href="/" className="nav-link">Home</a>
-            <a href="#/services" className="nav-link">Services</a>
+            <a href="/services" className="nav-link">Services</a>
             <a
               href="#/appointment"
               className="nav-link"
@@ -208,6 +208,7 @@ function UserDashboard() {
             >
               Appointment
             </a>
+            <a href="">About</a>
           </nav>
 
           <div className="profile">
