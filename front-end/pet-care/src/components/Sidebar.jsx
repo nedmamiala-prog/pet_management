@@ -1,17 +1,26 @@
 import React from 'react'
-import { Link } from 'react-router-dom';
-import { BsHeartFill, BsCalendar, BsBarChart, BsFillGearFill, BsCreditCard, BsSpeedometer, BsJournalMedical
+import { Link, useNavigate } from 'react-router-dom';
+import { BsHeartFill, BsCalendar, BsBarChart, BsFillGearFill, BsCreditCard, BsSpeedometer, BsJournalMedical, BsBoxArrowRight
  } from 'react-icons/bs';
 
 
 
 
 function Sidebar() {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    // Redirect to login page
+    navigate('/login');
+  };
+
   return (
     <aside id='sidebar'>
       <div className= 'sidebar-title'>
         <div className= 'sidebar-brand'>
-            <BsHeartFill className='icon_header'/> PetCare.
+            <div className='icon_header'/> 🐾PetCare.
         </div>
 
 
@@ -42,7 +51,11 @@ function Sidebar() {
                 <BsCreditCard className='icon'/> Billing
                 </Link>
         </li>
-        
+        <li className= 'sidebar-list-item'>
+            <a onClick={handleLogout} style={{ cursor: 'pointer' }}>
+                <BsBoxArrowRight className='icon'/> Logout
+            </a>
+        </li>
       </ul>
 
 
