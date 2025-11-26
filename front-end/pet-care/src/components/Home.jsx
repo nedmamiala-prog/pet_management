@@ -58,11 +58,11 @@ function Home() {
           </div>
 
 
-         <nav className="desktop-nav">
-  <a href="/" className="nav-link">Homwerhasufhsdfhjasjde</a>
-  <a href="#services" className="nav-link">Services</a>
-  <a href="#appointment" className="nav-link">Appointment</a>
-  <a href="#about" className="nav-link">About</a>
+   <nav className="desktop-nav">
+  <span className="nav-link" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>Home</span>
+  <span className="nav-link" onClick={() => document.getElementById('services').scrollIntoView({behavior: 'smooth'})}>Services</span>
+  <span className="nav-link" onClick={() => document.getElementById('appointment').scrollIntoView({behavior: 'smooth'})}>Appointment</span>
+  <span className="nav-link" onClick={() => document.getElementById('about').scrollIntoView({behavior: 'smooth'})}>About</span>
 </nav>
 
 
