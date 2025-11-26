@@ -218,8 +218,8 @@ exports.googleCallback = async (req, res) => {
             { expiresIn: '24h' }
           );
 
-   
-         res.redirect(`${frontendUrl}/#/auth/callback?token=${token}&role=user`);
+          // Existing Google user: redirect through SPA hash route
+          res.redirect(`${frontendUrl}/#/auth/callback?token=${token}&role=user`);
 
         } catch (jwtError) {
           console.error('JWT signing error:', jwtError);
@@ -259,7 +259,8 @@ exports.googleCallback = async (req, res) => {
                     process.env.JWT_SECRET || "secret",
                     { expiresIn: '24h' }
                   );
-                  res.redirect(`${frontendUrl}/auth/callback?token=${token}&role=user`);
+                  // Existing user found via duplicate email: also use SPA hash route
+                  res.redirect(`${frontendUrl}/#/auth/callback?token=${token}&role=user`);
                 });
               } else {
                 return redirectWithError(res, 'Failed to create account. Please try again.');
@@ -281,8 +282,8 @@ exports.googleCallback = async (req, res) => {
                 { expiresIn: '24h' }
               );
 
-      
-              res.redirect(`${frontendUrl}/auth/callback?token=${token}&role=user`);
+              // Brand new Google user: use the same SPA hash route
+              res.redirect(`${frontendUrl}/#/auth/callback?token=${token}&role=user`);
             } catch (jwtError) {
               console.error('JWT signing error:', jwtError);
               return redirectWithError(res, 'Failed to create authentication token');
