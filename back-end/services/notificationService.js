@@ -74,15 +74,30 @@ const getEmailSubjectForType = (type) => {
 };
 
 const maybeSendEmail = async (user_id, type, message) => {
-  if (!emailConfigured) return;
-  if (!EMAIL_SUPPORTED_TYPES.has(type)) return;
-  if (!message) return;
+  console.log('maybeSendEmail called:', { user_id, type, message: message?.substring(0, 50) + '...' });
+  console.log('Email configured:', emailConfigured);
+  console.log('Type supported:', EMAIL_SUPPORTED_TYPES.has(type));
+  
+  if (!emailConfigured) {
+    console.log('Email service not configured - skipping email');
+    return;
+  }
+  if (!EMAIL_SUPPORTED_TYPES.has(type)) {
+    console.log('Notification type not supported for email:', type);
+    return;
+  }
 
   try {
     const email = await getUserEmail(user_id);
-    if (!email) return;
+    console.log('Retrieved user email:', email);
+    if (!email) {
+      console.log('No email found for user:', user_id);
+      return;
+    }
     const subject = getEmailSubjectForType(type);
+    console.log('Sending email:', { to: email, subject });
     await sendEmail({ to: email, subject, text: message });
+    console.log('Email dispatch completed for user:', user_id);
   } catch (err) {
     console.error('Email notification error:', err.message || err);
   }
