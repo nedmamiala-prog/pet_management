@@ -1,37 +1,26 @@
-const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 
-const EMAIL_USER = process.env.EMAIL_USER;
-const EMAIL_PASS = process.env.EMAIL_PASS;
+const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
+const SENDGRID_FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || process.env.EMAIL_USER;
 
-const isConfigured = Boolean(EMAIL_USER && EMAIL_PASS);
+const isConfigured = Boolean(SENDGRID_API_KEY && SENDGRID_FROM_EMAIL);
 
 console.log('Email service configuration check:');
-console.log('EMAIL_USER:', EMAIL_USER ? 'SET' : 'NOT SET');
-console.log('EMAIL_PASS:', EMAIL_PASS ? 'SET' : 'NOT SET');
+console.log('SENDGRID_API_KEY:', SENDGRID_API_KEY ? 'SET' : 'NOT SET');
+console.log('SENDGRID_FROM_EMAIL:', SENDGRID_FROM_EMAIL ? 'SET' : 'NOT SET');
 console.log('Email service configured:', isConfigured);
 
-let transporter = null;
-
-const getTransporter = () => {
-  if (!isConfigured) return null;
-  if (!transporter) {
-    transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: EMAIL_USER,
-        pass: EMAIL_PASS,
-      },
-    });
-  }
-  return transporter;
-};
+if (isConfigured) {
+  sgMail.setApiKey(SENDGRID_API_KEY);
+} else {
+  console.warn('SendGrid not configured — emails will be skipped.');
+}
 
 const sendEmail = async ({ to, subject, text }) => {
   console.log('sendEmail called with:', { to, subject, text: text?.substring(0, 50) + '...' });
-  
-  const emailTransporter = getTransporter();
-  if (!emailTransporter) {
-    console.log('Email transporter not available - email service not configured');
+
+  if (!isConfigured) {
+    console.log('SendGrid api key or sender email missing — email not sent.');
     return;
   }
 
@@ -42,8 +31,8 @@ const sendEmail = async ({ to, subject, text }) => {
 
   try {
     console.log('Attempting to send email to:', to);
-    await emailTransporter.sendMail({
-      from: EMAIL_USER,
+    await sgMail.send({
+      from: SENDGRID_FROM_EMAIL,
       to,
       subject: subject || 'Notification',
       text,
