@@ -196,19 +196,15 @@ function UserDashboard() {
           </div>
 
           <nav className="desktop-nav">
-            <a href="/" className="nav-link">Home</a>
-            <a href="/services" className="nav-link">Services</a>
-            <a
-              href="#/appointment"
+            <span className="nav-link" onClick={() => navigate('/UserDashboard')}>Home</span>
+            <span className="nav-link" onClick={() => document.getElementById('services').scrollIntoView({behavior: 'smooth'})}>Services</span>
+            <span
               className="nav-link"
-              onClick={(e) => {
-                e.preventDefault();
-                openAppointment();
-              }}
+              onClick={openAppointment}
             >
               Appointment
-            </a>
-            <a href="">About</a>
+            </span>
+            <span className="nav-link" onClick={() => document.getElementById('about')?.scrollIntoView({behavior: 'smooth'})}>About</span>
           </nav>
 
           <div className="profile">
@@ -281,10 +277,10 @@ function UserDashboard() {
 
         {isMenuOpen && (
           <div className="mobile-menu">
-            <a href="/" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Home</a>
-            <a href="/UserDashboard" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Dashboard</a>
-            <a href="#/appointment" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Services</a>
-            <a href="/profile" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>Profile</a>
+            <span className="mobile-nav-link" onClick={() => { navigate('/UserDashboard'); setIsMenuOpen(false); }}>Home</span>
+            <span className="mobile-nav-link" onClick={() => { document.getElementById('services')?.scrollIntoView({behavior: 'smooth'}); setIsMenuOpen(false); }}>Services</span>
+            <span className="mobile-nav-link" onClick={() => { openAppointment(); setIsMenuOpen(false); }}>Appointment</span>
+            <span className="mobile-nav-link" onClick={() => { document.getElementById('about')?.scrollIntoView({behavior: 'smooth'}); setIsMenuOpen(false); }}>About</span>
           </div>
         )}
       </header>
