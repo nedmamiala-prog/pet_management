@@ -219,7 +219,8 @@ exports.googleCallback = async (req, res) => {
           );
 
    
-          res.redirect(`${frontendUrl}/auth/callback?token=${token}&role=user`);
+         res.redirect(`${frontendUrl}/#/auth/callback?token=${token}&role=user`);
+
         } catch (jwtError) {
           console.error('JWT signing error:', jwtError);
           return redirectWithError(res, 'Failed to create authentication token');
