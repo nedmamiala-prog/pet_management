@@ -55,79 +55,31 @@ export default function NotificationBell({ showProfileAvatar = true, showLogoutB
           style={{ backgroundImage: `url(${notifyIcon})` }}
         >
           {notifications.length > 0 && (
-            <span className="notif-badge">
-            
-            </span>
+            <span className="notif-badge"></span>
           )}
         </div>
       </button>
 
       {showNotificationPanel && (
-        <div
-          className="notification-dropdown"
-          style={{
-            position: 'absolute',
-            top: '120%',
-            right: 0,
-            width: '280px',
-            maxHeight: '320px',
-            overflowY: 'auto',
-            backgroundColor: '#fff',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            borderRadius: '8px',
-            padding: 0,
-            zIndex: 1000,
-            overflow: 'hidden',
-          }}
-        >
-          <div
-            style={{
-              background: 'linear-gradient(90deg, #2563eb, #1d4ed8)',
-              color: '#fff',
-              padding: '10px 12px',
-              fontWeight: 600,
-              fontSize: '14px',
-            }}
-          >
-            Notifications
-          </div>
-
-          {notificationLoading && (
-            <div style={{ padding: '10px 12px', fontSize: '13px', color: '#666' }}>
-              Loading notifications...
-            </div>
-          )}
-
-          {!notificationLoading && notifications.length === 0 && (
-            <div style={{ padding: '10px 12px', fontSize: '13px', color: '#666' }}>
-              No notifications yet.
-            </div>
-          )}
-
-          {!notificationLoading &&
-            notifications.length > 0 &&
-            notifications.map((n) => (
-              <div
-                key={n._id || n.id}
-                style={{
-                  padding: '8px 12px',
-                  borderBottom: '1px solid #f3f3f3',
-                  fontSize: '13px',
-                  cursor: 'default',
-                  backgroundColor: '#fff',
-                }}
-              >
-                <div style={{ fontWeight: 500, marginBottom: '2px' }}>
-                  {n.title || 'Notification'}
+        <div className="notification-panel">
+          <header>Notifications</header>
+          <div className="notification-list">
+            {notificationLoading ? (
+              <p className="notification-empty">Loading notifications...</p>
+            ) : notifications.length === 0 ? (
+              <p className="notification-empty">You're all caught up!</p>
+            ) : (
+              notifications.map((notif) => (
+                <div
+                  key={notif.notification_id || notif._id || notif.id}
+                  className="notification-item"
+                >
+                  <h4>{notif.title || 'Notification'}</h4>
+                  <p>{notif.message}</p>
                 </div>
-                <div style={{ color: '#555' }}>{n.message}</div>
-                {n.createdAt && (
-                  <div style={{ color: '#aaa', fontSize: '11px', marginTop: '2px' }}>
-                    {new Date(n.createdAt).toLocaleString()}
-                  </div>
-                )}
-              </div>
-            ))}
+              ))
+            )}
+          </div>
         </div>
       )}
 
