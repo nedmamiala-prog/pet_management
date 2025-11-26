@@ -26,12 +26,21 @@ const describeAppointment = ({ pet_name, service_name }) => {
 
 const summarizeRecordData = (data = {}) => {
   if (!data || typeof data !== 'object') return '';
+
+  // Special handling for vaccination so dates appear in the email/notification.
+  if (data.vaccineType || data.lastTaken || data.nextDue) {
+    const parts = [];
+    if (data.vaccineType) parts.push(`Vaccine: ${data.vaccineType}`);
+    if (data.lastTaken) parts.push(`Last taken: ${data.lastTaken}`);
+    if (data.nextDue) parts.push(`Next due: ${data.nextDue}`);
+    return ` ${parts.join(' | ')}`;
+  }
+
   const summaryFields = [
     ['diagnosis', 'Diagnosis'],
     ['status', 'Status'],
     ['medication', 'Medication'],
     ['notes', 'Notes'],
-    ['vaccineType', 'Vaccine'],
     ['groomType', 'Grooming'],
     ['reminderType', 'Reminder'],
   ];

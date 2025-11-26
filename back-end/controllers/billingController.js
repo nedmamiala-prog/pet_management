@@ -55,17 +55,39 @@ exports.adminMarkAsPaid = (req, res) => {
   const { billingId } = req.params;
   const { payment_reference } = req.body || {};
 
-  Billing.markPaid(billingId, payment_reference || null, (err) => {
-    if (err) {
-      console.error('Admin billing mark paid error:', err);
+  Billing.getById(billingId, (lookupErr, billing) => {
+    if (lookupErr || !billing) {
+      if (lookupErr) {
+        console.error('Admin billing lookup error:', lookupErr);
+      }
       return res
-        .status(500)
-        .json({ success: false, message: 'Error updating billing status', error: err });
+        .status(404)
+        .json({ success: false, message: 'Billing record not found' });
     }
 
-    return res
-      .status(200)
-      .json({ success: true, message: 'Payment recorded successfully' });
+    Billing.markPaid(billingId, payment_reference || null, async (err) => {
+      if (err) {
+        console.error('Admin billing mark paid error:', err);
+        return res
+          .status(500)
+          .json({ success: false, message: 'Error updating billing status', error: err });
+      }
+
+      try {
+        await notifyBillingUpdate({
+          user_id: billing.user_id,
+          amount: billing.amount,
+          status: 'paid',
+          invoice_id: billing.billing_id,
+        });
+      } catch (notificationErr) {
+        console.error('Admin billing notification error:', notificationErr);
+      }
+
+      return res
+        .status(200)
+        .json({ success: true, message: 'Payment recorded successfully' });
+    });
   });
 };
 
