@@ -77,5 +77,6 @@ export default function NotificationBell({ showProfileAvatar = true, showLogoutB
       )}
     </div>
   );
+}
 
 
