@@ -93,9 +93,13 @@ function BillingSection() {
 
     setPayingId(billing.billing_id);
     try {
-      const res = await fetch('/api/payment/create-order', {
+      const token = localStorage.getItem('token');
+      const res = await fetch('https://pet-management-ro9c.onrender.com/api/payment/create-order', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ amount: billing.amount, billingId: billing.billing_id }),
       });
       const json = await res.json();
