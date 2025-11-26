@@ -133,6 +133,8 @@ function PetProfile() {
     }
   };
 
+  const [pictureNotification, setPictureNotification] = useState(null);
+
   const handleSavePetPicture = async () => {
     if (!selectedFile || !selectedPet) return;
     
@@ -148,13 +150,22 @@ function PetProfile() {
           )
         );
         closeEditPictureModal();
-        alert('Pet profile picture updated successfully!');
+        setPictureNotification({
+          title: 'Success',
+          message: 'Pet profile picture updated successfully!',
+        });
       } else {
-        alert(response.message || 'Failed to update pet profile picture');
+        setPictureNotification({
+          title: 'Error',
+          message: response.message || 'Failed to update pet profile picture',
+        });
       }
     } catch (error) {
       console.error('Error updating pet profile picture:', error);
-      alert('Failed to update pet profile picture. Please try again.');
+      setPictureNotification({
+        title: 'Error',
+        message: 'Failed to update pet profile picture. Please try again.',
+      });
     }
   };
 
@@ -178,11 +189,11 @@ function PetProfile() {
       </div>
 
       <div className="pets-grid">
-        {loading ? (
+      {loading ? (
           <div className="no-pets-message">
             <h3>Loading pets...</h3>
           </div>
-        ) : pets.length > 0 ? (
+      ) : pets.length > 0 ? (
           pets.map(pet => (
             <div
               key={pet.id}
@@ -276,6 +287,22 @@ function PetProfile() {
                 ))}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {pictureNotification && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <button
+              type="button"
+              className="close-modal"
+              onClick={() => setPictureNotification(null)}
+            >
+              ×
+            </button>
+            <h3>{pictureNotification.title}</h3>
+            <p>{pictureNotification.message}</p>
           </div>
         </div>
       )}

@@ -207,11 +207,11 @@ body {
   font-family: 'Montagu Slab', serif;
   letter-spacing: -0.025em;
 }
-  .desktop-nav {
-    display: flex;
-    gap: 4rem;
-    align-items: center;
-  }
+.desktop-nav {
+  display: flex;
+  gap: 4rem;
+  align-items: center;
+}
   
   .nav-link {
     color: #374151;
@@ -1155,6 +1155,41 @@ body {
       width: fit-content;
       margin-top: 1rem;
     }
+
+/* Mobile responsiveness - keep design but adapt layout for phones */
+@media (max-width: 768px) {
+  .header-content {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .desktop-nav {
+    display: none;
+  }
+
+  .mobile-menu-btn {
+    display: block;
+  }
+
+  .mobile-menu {
+    display: flex;
+    position: fixed;
+    top: 64px;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.25);
+    z-index: 1100;
+  }
+
+  .hero-content {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .profile {
+    gap: 12px;
+  }
+}
    
    
     .hero {

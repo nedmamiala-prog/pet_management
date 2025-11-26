@@ -214,6 +214,7 @@ function UserDashboard() {
             <a href="#/UserDashboard" className="nav-link">About</a>
           </nav>
 
+          {/* Notification bell + avatar kept here for profile header; Dashboard uses shared component now */}
           <div className="profile" style={{ position: 'relative' }}>
             <button 
               className="notify-btn"
