@@ -65,9 +65,17 @@ const Appointment = {
 
   getById: (appointment_id, callback) => {
     const sql = `
-      SELECT a.*, u.email, u.first_name, u.last_name
+      SELECT 
+        a.*,
+        u.email,
+        u.first_name,
+        u.last_name,
+        p.pet_name,
+        COALESCE(s.service_name, a.service) AS service_name
       FROM appointment a
       JOIN user u ON a.user_id = u.user_id
+      LEFT JOIN pet p ON a.pet_id = p.pet_id
+      LEFT JOIN service s ON a.service_id = s.service_id
       WHERE a.appointment_id = ?
     `;
     db.query(sql, [appointment_id], callback);

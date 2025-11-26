@@ -17,6 +17,13 @@ const safeDate = (value) => {
   return Number.isNaN(date.getTime()) ? null : date;
 };
 
+const describeAppointment = ({ pet_name, service_name }) => {
+  if (service_name && pet_name) return `${service_name} for ${pet_name}`;
+  if (service_name) return service_name;
+  if (pet_name) return `your pet ${pet_name}`;
+  return 'your appointment';
+};
+
 const EMAIL_SUPPORTED_TYPES = new Set([
   'appointment_reminder_24h',
   'appointment_reminder_3h',
@@ -148,7 +155,16 @@ const scheduleAppointmentReminders = async ({ user_id, appointment_id, date_time
   );
 };
 
-const notifyAppointmentStatus = async ({ user_id, appointment_id, status, reason, initiator = 'system' }) => {
+const notifyAppointmentStatus = async ({
+  user_id,
+  appointment_id,
+  status,
+  reason,
+  initiator = 'system',
+  pet_name,
+  service_name,
+  date_time,
+}) => {
   const type =
     status === 'Accepted'
       ? 'appointment_accepted'
@@ -156,19 +172,25 @@ const notifyAppointmentStatus = async ({ user_id, appointment_id, status, reason
         ? 'appointment_cancelled'
         : 'appointment_update';
 
+  const appointmentDate = safeDate(date_time);
+  const dateText = appointmentDate ? ` on ${formatDateTime(appointmentDate)}` : '';
+  const appointmentLabel = describeAppointment({ pet_name, service_name });
+
   let message;
   if (status === 'Accepted') {
-    message = 'Your appointment has been accepted.';
+    message = `Your ${appointmentLabel}${dateText} has been accepted.`;
   } else if (status === 'Cancelled') {
-    message =
-      initiator === 'user'
-        ? 'Cancellation successfull.'
-        : `Your appointment was cancelled${reason ? `: ${reason}` : '.'}`;
+    if (initiator === 'user') {
+      message = `You cancelled the ${appointmentLabel}${dateText}.`;
+    } else {
+      const reasonText = reason ? ` Reason: ${reason}.` : '';
+      message = `The clinic cancelled your ${appointmentLabel}${dateText}.${reasonText}`.trim();
+    }
   } else {
-    message = `Appointment status updated: ${status}.`;
+    message = `Appointment status updated to ${status} for ${appointmentLabel}${dateText}.`;
   }
 
-  const metadata = { appointment_id, status };
+  const metadata = { appointment_id, status, pet_name, service_name };
   if (reason && initiator !== 'user') {
     metadata.reason = reason;
   }

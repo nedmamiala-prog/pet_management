@@ -166,6 +166,9 @@ exports.AcceptAppointment = async (req, res) => {
           appointment_id,
           status: 'Accepted',
           initiator: 'admin',
+          pet_name: appointment.pet_name,
+          service_name: appointment.service_name || appointment.service,
+          date_time: appointment.date_time,
         });
       }
     } catch (notifyErr) {
@@ -232,6 +235,9 @@ exports.CancelAppointment = async (req, res) => {
         status: 'Cancelled',
         reason,
         initiator: requesterRole === 'admin' ? 'admin' : 'user',
+        pet_name: appointment.pet_name,
+        service_name: appointment.service_name || appointment.service,
+        date_time: appointment.date_time,
       });
     } catch (notifyErr) {
       console.error('Cancel notification error:', notifyErr);
